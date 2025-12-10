@@ -52,12 +52,12 @@ clear
 	#delimit cr
 	
 	local cycle = 1
-	forvalues yyyy =  2005/2023 {
+        forvalues yyyy =  2005/2025 {
 	forvalues qq = 1/4 {
 		clear
 		local counter = (`yyyy'-2005)*4 + `qq'
 		
-		if (`counter'!=62) {
+                if (`counter'!=62 & `counter'<=83) {
 
 				noi di "MEX_`yyyy'_ENOE-Q`qq'"
 					       cap use `myvars'  using "$path/MEX_`yyyy'_ENOE-Q`qq'/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD_ALL.dta", clear
