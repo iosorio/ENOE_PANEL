@@ -1,0 +1,5 @@
+El 19 de agosto de 2021, se reemplazaron los archivos de Base de datos debido a que se actualizaron las estimaciones de población, con base en la propia actualización del Marco de Muestreo del INEGI, en consecuencia, se ajustó la variable FAC_TRI.
+
+El 18 de agosto de 2022, se reemplazaron los archivos de Base de datos, debido a que se modificaron los registros de no entrevista en el valor de la variable FAC, ya que su valor asignado era mayor a cero.
+
+El 4 de septiembre de 2023, se reemplazó el archivo de la tabla de datos del Sociodemográfico (SDEMT), debido a una actualización en la variable CS_P14_C.
