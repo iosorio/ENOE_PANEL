@@ -1,0 +1,1 @@
+El 27 de mayo de 2025, se reemplazaron los archivos de las Bases de datos, debido a una actualización en la variable P6E_C de la tabla COE2, y en la variable CS_P14_C, de la tabla SDEM.
