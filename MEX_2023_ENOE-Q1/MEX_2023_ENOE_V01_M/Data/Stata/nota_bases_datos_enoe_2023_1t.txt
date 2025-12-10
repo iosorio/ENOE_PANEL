@@ -1,0 +1,1 @@
+El 13 de junio de 2023 se reemplazó el archivo de Base de datos COE1 (Cuestionario de Ocupación y Empleo), correspondiente al primer trimestre de 2023 (formato DTA), debido a que se corrigió el tipo de dato de carácter a numérico para algunos campos.
