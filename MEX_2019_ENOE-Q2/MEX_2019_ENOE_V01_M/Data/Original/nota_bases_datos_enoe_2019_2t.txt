@@ -1,0 +1,2 @@
+NOTA: El 22 de noviembre de 2021, se reemplazaron los archivos de Base de datos debido a que se actualizaron las estimaciones de población, con base en la propia actualización del Marco de Muestreo de Viviendas del INEGI, en consecuencia, se ajustó la variable FAC.
+
