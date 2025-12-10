@@ -1,0 +1,1 @@
+El 23 de noviembre de 2022, se reemplazaron los archivos de Base de datos (tablas HOG y VIV), debido a que se rectificó la información del campo municipio (MUN).

@@ -1,0 +1,8 @@
+El 31 de enero de 2022 se reemplazó la base de datos del primer trimestre de 2021, debido a que se actualizó el factor de expansión mensual, el cual fue construido a partir de la estimación de población con base en el Marco de Muestreo del INEGI.
+
+El 4 de septiembre de 2023, se reemplazó el archivo de la tabla de datos del Sociodemográfico (SDEMT), debido a una actualización en la variable CS_P14_C.
+
+
+
+
+

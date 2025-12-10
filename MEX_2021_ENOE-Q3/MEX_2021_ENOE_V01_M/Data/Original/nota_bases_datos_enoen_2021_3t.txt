@@ -1,0 +1,12 @@
+El 31 de enero de 2022, se reemplazó el archivo SDEMT (formatos CSV, DTA y SAV) de la Base de datos, debido a que se revisaron los valores de la variable precodificada CS_P14_C.
+
+Se precisa que, a partir del 31 de enero de 2022, se incorporó la clave de identificación para el Estado de México y la ciudad de Toluca, con base en la metodología definida para la Encuesta Nacional de Ocupación y Empleo, atendiendo las resoluciones y acuerdos dictados sobre la Controversia Constitucional 78/2021 y los recursos de reclamación derivados de ella.
+
+El 23 de noviembre de 2022, se reemplazaron los archivos de Base de datos (tablas HOG y VIV), debido a que se rectificó la información del campo municipio (MUN).
+
+
+
+
+
+
+
