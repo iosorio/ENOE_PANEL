@@ -1,6 +1,6 @@
 # ENOE_PANEL
 
-Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacional de Ocupación y Empleo) using the World Bank GLD template. The repository runs from 2005.Q1 through 2025.Q3 and produces harmonized quarterly microdata, a rotating worker panel, and tabulations/figures used in downstream analysis.
+About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacional de Ocupación y Empleo) using the World Bank GLD template. The codebase spans 2005.Q1–2025.Q3 and generates harmonized quarterly microdata, a rotating worker panel, and tabulations/figures for analysis.
 
 ## Repository layout
 - `Do-files/` — main pipeline in Stata:
