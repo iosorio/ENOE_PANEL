@@ -621,7 +621,7 @@ erase "`path_output'/baseCOE2T`x'.dta";
 	label var subnatid3 "Subnational ID at Third Administrative Level"
 *</_subnatid3_>
 
-error 1
+
 *<_subnatidsurvey_>
 	gen subnatidsurvey = "subnatid2"
 	label var subnatidsurvey "Administrative level at which survey is representative"
@@ -1311,40 +1311,70 @@ leave or that usually work but for some other reason were not working on the wee
 
 The restrictions below could be completed with the following, yet these are not included because they dependent to individual perspective
 *replace if usually it happens the same this season (4) and if you consider this will not last (5)
-	replace whours=p5e_thrs if inrange(p5b,4,5)
+*	replace whours=p5e_thrs if inrange(p5b,4,5)
 *replace with usual hours if they declare that not the usual hours in p5d
-	replace whours=p5e_thrs if p5d==2
+*	replace whours=p5e_thrs if p5d==2
 
-<_whours_note_>*/
+</_whours_note_>*/
+* Defensive: prefer p5b_thrs if present (newer instrument); otherwise use p5c_thrs (older instrument)
+cap confirm var p5b_thrs
+if !_rc {
+	gen whours = p5b_thrs
+	replace whours = p5d_thrs if p5a==2
+}
+else {
+	cap confirm var p5c_thrs
+	if !_rc {
+		gen whours = p5c_thrs
+		replace whours = p5e_thrs if p5a==2
+	}
+	else {
+		display as error "whours: neither p5b_thrs nor p5c_thrs found"
+		98
+	}
+}
 
-*this variable has outliers starting in 85 to 168 hours of work
-	gen whours=p5b_thrs
-*replace if not the usual hours in the week
-	replace whours=p5d_thrs if p5a==2
-
-	replace whours=. if lstatus!=1
-	replace whours=. if p4==4
-	replace whours=. if whours==999
-	label var whours "Hours of work in last week primary job 7 day recall"
+replace whours=. if lstatus!=1
+replace whours=. if p4==4
+replace whours=. if p5==2
+label var whours "Hours of work per week primary job 7 day recall"
 *</_whours_>
 
-
 *<_wmonths_>
-	forvalues i=1/12 {
-	    gen double new_p5f_`i'=1 if p5f`i'==`i'
-		recode new_p5f_`i'(.=0)
-	}
-	gen wmonths = new_p5f_1 + new_p5f_2 + new_p5f_3 + new_p5f_4 + new_p5f_5 + new_p5f_6 + new_p5f_7 + new_p5f_8+ new_p5f_9 + new_p5f_10 + new_p5f_11 + new_p5f_12
-	replace wmonths=12 if p5f14==14
-	replace wmonths=. if p5f13==13 | p5f15==15 | p5f99==99
-	replace wmonths=. if lstatus!=1
-	replace wage_no_compen=. if wmonths==0
-	replace wmonths=. if wmonths==0
-	replace wmonths=. if wage_no_compen==.
-	replace unitwage=. if wmonths==.
-	label var wmonths "Months of work in past 12 months primary job 7 day recall"
+* Defensive: prefer p5f* if present (newer instrument); otherwise use p5g* (older instrument)
+cap confirm var p5f1
+if !_rc {
+    forvalues i=1/12 {
+        gen double new_p5f_`i' = 1 if p5f`i'==`i'
+        recode new_p5f_`i' (.=0)
+    }
+    gen wmonths = new_p5f_1 + new_p5f_2 + new_p5f_3 + new_p5f_4 + new_p5f_5 + new_p5f_6 + new_p5f_7 + new_p5f_8 + new_p5f_9 + new_p5f_10 + new_p5f_11 + new_p5f_12
+    cap replace wmonths = 12 if p5f14==14
+    cap replace wmonths = .  if p5f13==13 | p5f15==15 | p5f99==99
+}
+else {
+    cap confirm var p5g1
+    if !_rc {
+        forvalues i=1/12 {
+            gen double new_p5g_`i' = 1 if p5g`i'==`i'
+            recode new_p5g_`i' (.=0)
+        }
+        gen wmonths = new_p5g_1 + new_p5g_2 + new_p5g_3 + new_p5g_4 + new_p5g_5 + new_p5g_6 + new_p5g_7 + new_p5g_8 + new_p5g_9 + new_p5g_10 + new_p5g_11 + new_p5g_12
+        cap replace wmonths = 12 if p5g14==14
+        cap replace wmonths = .  if p5g13==13 | p5g15==15 | p5g99==99
+    }
+    else {
+        display as error "wmonths: neither p5f* nor p5g* found"
+        error 198
+    }
+}
+replace wmonths = . if lstatus!=1
+replace wage_no_compen = . if wmonths==0
+replace wmonths = . if wmonths==0
+replace wmonths = . if wage_no_compen==.
+replace unitwage = . if wmonths==.
+label var wmonths "Months of work in past 12 months primary job 7 day recall"
 *</_wmonths_>
-
 
 *<_wage_total_>
 /* <_wage_total>
@@ -2252,6 +2282,16 @@ replace industrycat10_2_helper=. if lstatus!=1
 	scalar  rT323 	=	1697.79 ;
 	scalar  uT423	=	2239.99 ; 
 	scalar  rT423 	=	1716.25	;
+
+	scalar  uT124	=	2303.21 ; 
+	scalar  rT124 	=	1768.38 ;
+	scalar  uT224	=	2301.81 ; 
+	scalar  rT224 	=	1762.85 ;
+	scalar  uT324   =	2350.35 ;
+	scalar  rT324   =	1797.26 ;
+	scalar  uT424   =	2357.49 ;
+	scalar  rT424   =	1796.86 ;
+
 	
 	gen ocupado=cond(clase1==1 & clase2==1,1,0);
 

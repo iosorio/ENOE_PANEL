@@ -1313,7 +1313,7 @@ The restrictions below could be completed with the following, yet these are not 
 *replace with usual hours if they declare that not the usual hours in p5d
 	replace whours=p5e_thrs if p5d==2
 
-<_whours_note_>*/
+</_whours_note_>*/
 
 *this variable has outliers starting in 85 to 168 hours of work
 	gen whours=p5c_thrs
@@ -2254,6 +2254,16 @@ replace industrycat10_2_helper=. if lstatus!=1
 	scalar  rT323 	=	1697.79 ;
 	scalar  uT423	=	2239.99 ; 
 	scalar  rT423 	=	1716.25	;
+
+	scalar  uT124	=	2303.21 ; 
+	scalar  rT124 	=	1768.38 ;
+	scalar  uT224	=	2301.81 ; 
+	scalar  rT224 	=	1762.85 ;
+	scalar  uT324   =	2350.35 ;
+	scalar  rT324   =	1797.26 ;
+	scalar  uT424   =	2357.49 ;
+	scalar  rT424   =	1796.86 ;
+
 	
 	gen ocupado=cond(clase1==1 & clase2==1,1,0);
 
