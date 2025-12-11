@@ -65,7 +65,7 @@ set more off
 
 * Define path sections
 if c(os)=="Windows" local server "C:/Users/WB308767/OneDrive/Data/GLD"
-if c(os)=="MacOSX"|c(os)=="Unix"  local server "/Users/Israel/OneDrive/IOR/Projects/Y2025/FY25_MEX_MinimumWage/Mexico_MinWage/ENOE"
+if c(os)=="MacOSX"|c(os)=="Unix"  local server "/Users/Israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL"
 local country "MEX"
 local year    "2008"
 local survey  "ENOE"

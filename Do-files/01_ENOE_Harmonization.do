@@ -10,7 +10,7 @@ clear
 * ENOE Harmonization, cycle from 2005.Q1 to 2025.Q3
 * Period 62 is ommited. ENOE not available due to COVID-19
 
-        local iniyear = 2005
+        local iniyear = 2024
         local finyear = 2025
 
 	local cycle = 1

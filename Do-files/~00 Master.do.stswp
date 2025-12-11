@@ -12,7 +12,7 @@
  
 * User 1: Israel Osorio Rodarte
 	if c(username)=="israel"|c(username)=="Israel" {
-		global path "/Users/`c(username)'/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL"
+		global path "/Users/`c(username)'/LibCloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL"
 	}
 
 * User 2: Israel Osorio Rodarte (WB308767)

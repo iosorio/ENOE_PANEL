@@ -5,40 +5,40 @@
 
 /* -----------------------------------------------------------------------
 
-<_Program name_>				[MEX_2005_ENOE_V01_M_V06_A_GLD_ALL.do] </_Program name_>
+<_Program name_>				[MEX_2025_ENOE_V01_M_V06_A_GLD_ALL.do] </_Program name_>
 <_Application_>					[STATA] <_Application_>
 <_Author(s)_>					[The World Bank Jobs Group] </_Author(s)_>
-<_Date created_>				2021-04-01 </_Date created_>
+<_Date created_>				2023-03-24 </_Date created_>
 
 -------------------------------------------------------------------------
 
 <_Country_>						[Mexico (MEX)] </_Country_>
 <_Survey Title_>				[Encuesta Nacional de Ocupación y Empleo] </_Survey Title_>
-<_Survey Year_>					[2005] </_Survey Year_>
+<_Survey Year_>					[2025] </_Survey Year_>
 <_Study ID_>					[Microdata Library ID if present] </_Study ID_>
-<_Data collection from_>		[01/2005] </_Data collection from_>
-<_Data collection to_>			[05/2005] </_Data collection to_>
+<_Data collection from_>		[XX/20XX] </_Data collection from_>
+<_Data collection to_>			[XX/20XX] </_Data collection to_>
 <_Source of dataset_> 			[Mexico NSO] </_Source of dataset_>
-<_Sample size (HH)_> 			[102,856] </_Sample size (HH)_>
-<_Sample size (IND)_> 			[409,098] </_Sample size (IND)_>
-<_Sampling method_> 			[El tipo de muestreo utilizado es probabilístico, bietápico, estratificado y por conglomerados.] </_Sampling method_>
+<_Sample size (HH)_> 			[XXXXX] </_Sample size (HH)_>
+<_Sample size (IND)_> 			[XXXXX] </_Sample size (IND)_>
+<_Sampling method_> 			[ El tipo de muestreo utilizado es probabilístico, bietápico, estratificado y por conglomerados.] </_Sampling method_>
 <_Geographic coverage_> 		[Los niveles geograficos usados en la encuesta de México comienzan en estados siguen con ciudades autorrepresentadas y terminan con municipios de las ciudades autorrepresentadas. https://www.inegi.org.mx/contenidos/productos/prod_serv/contenidos/espanol/bvinegi/productos/metodologias/est/cobertura.pdf] </_Geographic coverage_>
 <_Currency_> 					[Pesos] </_Currency_>
 
 -----------------------------------------------------------------------
 
-<_ICLS Version_>				[ICLS 13] </_ICLS Version_>
-<_ISCED Version_>				[ISCED 1997] </_ISCED Version_>
-<_ISCO Version_>				[ISCO-08] </_ISCO Version_>
-<_OCCUP National_>				[CMO I & II 1998 ] </_OCCUP National_>
-<_ISIC Version_>				[Rev 4] </_ISIC Version_>
+<_ICLS Version_>				[ICLS-18] </_ICLS Version_>
+<_ISCED Version_>				[ISCED 2011] </_ISCED Version_>
+<_ISCO Version_>				[ISCO 08] </_ISCO Version_>
+<_OCCUP National_>				[Sinco 2011] </_OCCUP National_>
+<_ISIC Version_>				[Rev.4] </_ISIC Version_>
 <_INDUS National_>				[SCIAN 2007] </_INDUS National_>
 
 -----------------------------------------------------------------------
 <_Version Control_>
 
 * Date: [2021-04-D1] - [Check code and input variables]
-* Date: [2022-03-D4] - [corrections variable wmonths, use of correct version for isic]
+* Date: [2022-03-08] - [corrections variable wmonths, use of correct version for isic]
 * Date: [2022-06-27] - [corrections variable empstat, firmsize]
 * Date: [2022-09-07] - [corrections variable occup_skill, occup(2013-2020), subnatid1 , subnatid2 and occup_skill_2]
 * Date: [2023-02-08] - [Correct empstat]
@@ -65,9 +65,9 @@ set more off
 
 * Define path sections
 if c(os)=="Windows" local server "C:/Users/WB308767/OneDrive/Data/GLD"
-if c(os)=="MacOSX"|c(os)=="Unix"  local server "/Users/Israel/OneDrive/Data/GLD"
+if c(os)=="MacOSX"|c(os)=="Unix"  local server "/Users/Israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL"
 local country "MEX"
-local year    "2023"
+local year    "2025"
 local survey  "ENOE"
 local vermast "V01"
 local veralt  "V06"
@@ -79,25 +79,30 @@ local level_2_mast "`level_1'_`vermast'_M"
 local level_2_harm "`level_1'_`vermast'_M_`veralt'_A_GLD"
 
 * From chunks, define path_in, path_output folder
-local path_in_stata "`server'/`country' copy/`level_1'-`quarter'/`level_2_mast'/Data/Stata"
-local path_in_other "`server'/`country' copy/`level_1'-`quarter'/`level_2_mast'/Data/Original"
-local path_output   "`server'/`country' copy/`level_1'-`quarter'/`level_2_harm'/Data/Harmonized"
+local path_in_do 	"`server'/`level_1'-`quarter'/`level_2_harm'/Programs"
+
+local path_in_stata "`server'/`level_1'-`quarter'/`level_2_mast'/Data/Stata"
+local path_in_other "`server'/`level_1'-`quarter'/`level_2_mast'/Data/Original"
+local path_output   "`server'/`level_1'-`quarter'/`level_2_harm'/Data/Harmonized"
 
 * Define Output file name
 local out_file "`level_2_harm'_ALL.dta"
 
 *----------1.3: Database assembly------------------------------*
-
 #delimit ;
 local q  = substr("`quarter'",2,1);
 local yy = substr("`year'",3,2);
 local x = `q'`yy';
 noi di "x: `x'";
+local use_enoen_ext = inlist(`x',320,420,121,221);
+local use_enoen     = inlist(`x',321,421,122,222,322,422);
+local use_enoe      = inlist(`x',123,223,323,423,124,224,324,424,125,225,325);
 cd "`path_in_stata'";
 
 * COE1;
-if `x'==320 | `x'==420 | `x'==121 | `x'==221{;
+if `use_enoen_ext'{;
 	use "`path_in_stata'/enoen_coe1t`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren , replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud tipo ca mes_cal, replace force;
@@ -106,8 +111,9 @@ if `x'==320 | `x'==420 | `x'==121 | `x'==221{;
 
 };
 
-else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{; 
+else if `use_enoen'{;
 	use "`path_in_stata'/enoen_coe1t`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud tipo mes_cal, replace force;
@@ -119,8 +125,9 @@ else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{;
 informó que se retomó el levantamiento de la ENOE, y que los métodos de recolección de la 
 información se realizaron por medio de entrevistas cara a cara y telefónicas.;  
 
-else if `x'==123 | `x'==223{; 
+else if `use_enoe'{;
 	use "`path_in_stata'/enoe_coe1t`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud tipo mes_cal, replace force;
@@ -131,6 +138,7 @@ else if `x'==123 | `x'==223{;
 
 else {; 
 	use "`path_in_stata'/COE1T`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud, replace force;
@@ -138,14 +146,13 @@ else {;
 	gen str foliop = (cd_a + ent + con + v_sel + n_hog + h_mud + n_ren);
 };
 
-
-*keep foliop p6c p6b2 p6_9 p6a3;
 sort foliop;
 save "`path_output'/baseCOE1T`x'.dta", replace;
 
 * COE2;
-if `x'==320 | `x'==420 | `x'==121 | `x'==221{;
+if `use_enoen_ext'{;
 	use "`path_in_stata'/enoen_coe2t`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren , replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud tipo ca mes_cal, replace force;
@@ -154,8 +161,9 @@ if `x'==320 | `x'==420 | `x'==121 | `x'==221{;
 
 };
 
-else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{; 
+else if `use_enoen'{; 
 	use "`path_in_stata'/enoen_coe2t`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud tipo mes_cal, replace force;
@@ -167,8 +175,9 @@ else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{;
 informó que se retomó el levantamiento de la ENOE, y que los métodos de recolección de la 
 información se realizaron por medio de entrevistas cara a cara y telefónicas.;  
 
-else if `x'==123 | `x'==223{; 
+else if `use_enoe'{; 
 	use "`path_in_stata'/enoe_coe2t`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud tipo mes_cal, replace force;
@@ -179,6 +188,7 @@ else if `x'==123 | `x'==223{;
 
 else {; 
 	use "`path_in_stata'/COE2T`x'.dta" , clear;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring  n_hog  h_mud, replace force;
@@ -186,14 +196,13 @@ else {;
 	gen str foliop = (cd_a + ent + con + v_sel + n_hog + h_mud + n_ren);
 };
 
-
-*keep foliop p6c p6b2 p6_9 p6a3;
 sort foliop;
 save "`path_output'/baseCOE2T`x'.dta", replace;
 			
 *SDEM;		
-if `x'==320 | `x'==420 | `x'==121 | `x'==221{;					
+if `use_enoen_ext'{;					
 	use "`path_in_stata'/enoen_sdemt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring n_hog h_mud tipo ca mes_cal, replace force;
@@ -208,8 +217,9 @@ if `x'==320 | `x'==420 | `x'==121 | `x'==221{;
 
 };
 
-else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{; 
+else if `use_enoen'{; 
 	use "`path_in_stata'/enoen_sdemt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring n_hog h_mud tipo mes_cal, replace force;
@@ -223,8 +233,9 @@ else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{;
 
 };
 
-else if `x'==123 | `x'==223 {; 
+else if `use_enoe'{; 
 	use "`path_in_stata'/enoe_sdemt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force ;
 	tostring con, replace format(%04.0f) force ;
 	tostring n_hog h_mud tipo mes_cal, replace force ;
@@ -238,9 +249,9 @@ else if `x'==123 | `x'==223 {;
 
 };
 
-
 else{;
 	use "`path_in_stata'/SDEMT`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel n_ren, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring n_hog h_mud, replace force;
@@ -250,13 +261,13 @@ else{;
 	destring t_loc, replace;
 };
 
-*keep folioh foliop salario t_loc fac clase1 clase2 ent ingocup;
 sort foliop;
 save "`path_output'/baseSDEMT`x'.dta", replace;
 
 *VIV;		
-if `x'==320 | `x'==420 | `x'==121 | `x'==221{;					
+if `use_enoen_ext'{;					
 	use "`path_in_stata'/enoen_vivt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring tipo ca mes_cal, replace force;
@@ -270,8 +281,9 @@ if `x'==320 | `x'==420 | `x'==121 | `x'==221{;
 
 };
 
-else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{; 
+else if `use_enoen'{; 
 	use "`path_in_stata'/enoen_vivt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring tipo mes_cal, replace force;
@@ -284,14 +296,14 @@ else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{;
 
 };
 
-else if `x'==123 | `x'==223 {; 
+else if `use_enoe'{; 
 	use "`path_in_stata'/enoe_vivt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force ;
 	tostring con, replace format(%04.0f) force ;
 	tostring tipo mes_cal, replace force ;
 
-	 gen str foliov = (cd_a + ent + con + v_sel + tipo + mes_cal) ;
-	*gen str folioh = (cd_a + ent + con + v_sel + tipo + mes_cal + n_hog + h_mud) ;
+	gen str foliov = (cd_a + ent + con + v_sel + tipo + mes_cal) ;
 	rename t_loc_tri t_loc ;
 	destring t_loc, replace ;
 	rename fac_tri fac ;
@@ -301,21 +313,24 @@ else if `x'==123 | `x'==223 {;
 
 else{;
 	use "`path_in_stata'/VIVT`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	
-	 gen str foliov = (cd_a + ent + con + v_sel);
-	*gen str folioh = (cd_a + ent + con + v_sel + n_hog + h_mud);
+	gen str foliov = (cd_a + ent + con + v_sel);
 	destring t_loc, replace;
 };
 
-*keep folioh foliop salario t_loc fac clase1 clase2 ent ingocup;
 sort foliov;
+cap rename p1 p1viv;
+cap rename p2 p2viv;
+cap rename p3 p3viv;
 save "`path_output'/baseVIVT`x'.dta", replace;
 
 *HOG;		
-if `x'==320 | `x'==420 | `x'==121 | `x'==221{;					
+if `use_enoen_ext'{;					
 	use "`path_in_stata'/enoen_hogt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring n_hog h_mud tipo ca mes_cal, replace force;
@@ -329,8 +344,9 @@ if `x'==320 | `x'==420 | `x'==121 | `x'==221{;
 
 };
 
-else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{; 
+else if `use_enoen'{; 
 	use "`path_in_stata'/enoen_hogt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring n_hog h_mud tipo mes_cal, replace force;
@@ -343,8 +359,9 @@ else if `x'==321 | `x'==421 | `x'==122 | `x'==222 | `x'==322 | `x'==422{;
 
 };
 
-else if `x'==123 | `x'==223 {; 
+else if `use_enoe'{; 
 	use "`path_in_stata'/enoe_hogt`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force ;
 	tostring con, replace format(%04.0f) force ;
 	tostring n_hog h_mud tipo mes_cal, replace force ;
@@ -357,9 +374,9 @@ else if `x'==123 | `x'==223 {;
 
 };
 
-
 else{;
 	use "`path_in_stata'/HOGT`x'.dta", clear ;
+	rename *, lower;
 	tostring cd_a ent v_sel, replace format(%02.0f) force;
 	tostring con, replace format(%04.0f) force;
 	tostring n_hog h_mud, replace force;
@@ -368,7 +385,6 @@ else{;
 	destring t_loc, replace;
 };
 
-*keep folioh foliop salario t_loc fac clase1 clase2 ent ingocup;
 sort folioh;
 save "`path_output'/baseHOGT`x'.dta", replace;
 
@@ -382,133 +398,50 @@ merge 1:1 foliop using "`path_output'/baseCOE1T`x'.dta";
 	drop _merge;
 merge 1:1 foliop using "`path_output'/baseCOE2T`x'.dta";
 	drop _merge;
+erase "`path_output'/baseVIVT`x'.dta";
+erase "`path_output'/baseHOGT`x'.dta";
+erase "`path_output'/baseSDEMT`x'.dta";	
+erase "`path_output'/baseCOE1T`x'.dta";
+erase "`path_output'/baseCOE2T`x'.dta";
 #delimit cr
 
 
-/*
-* All steps necessary to merge datasets (if several) to have all elements needed to produce
-* harmonized output in a single file
-
-	use "`path_in_stata'/COE1T105.dta", clear
-	tostring (ent v_sel n_ren), gen(ent_str v_sel_str n_ren_str) format("%02.0f")
-	tostring con, gen(con_str) format("%05.0f")
-	tostring (n_hog h_mud), gen(n_hog_str h_mud_str) format("%01.0f")
-
-	egen person = concat(ent_str con_str v_sel_str n_hog_str h_mud_str n_ren_str)
-	tempfile mex_ind
-	save `mex_ind'
-
-	use "`path_in_stata'/COE2T105.dta", clear
-	tostring (ent v_sel n_ren), gen(ent_str v_sel_str n_ren_str) format("%02.0f")
-	tostring con, gen(con_str) format("%05.0f")
-	tostring (n_hog h_mud), gen(n_hog_str h_mud_str) format("%01.0f")
-
-
-	egen person = concat(ent_str con_str v_sel_str n_hog_str h_mud_str n_ren_str)
-
-	* Merge with COE1, make sure all match through assert
-	merge 1:1 person using `mex_ind', assert(match) nogen
-
-	* Drop non finished interviews
-	drop if r_def != 0
-
-
-	* Overwrtwrite temp file
-	tempfile mex_ind
-	save `mex_ind'
-
-
-	use "`path_in_stata'/SDEMT105.dta", clear
-	tostring (ent v_sel n_ren), gen(ent_str v_sel_str n_ren_str) format("%02.0f")
-	tostring con, gen(con_str) format("%05.0f")
-	tostring (n_hog h_mud), gen(n_hog_str h_mud_str) format("%01.0f")
-
-	egen person = concat(ent_str con_str v_sel_str n_hog_str h_mud_str n_ren_str)
-
-	drop if r_def != 0
-	drop if !missing(cs_ad_mot)
-
-	* Merge with COE1 & COE2 files, assert match (for 12 and over) or master (for younger)
-	merge 1:1 person using `mex_ind', assert(match master) nogen
-
-	* Create HH level for merging with that information
-	egen casa_long = concat(ent_str con_str v_sel_str n_hog_str h_mud_str)
-	egen casa_short = concat(ent_str con_str v_sel_str)
-
-	* Overwrtwrite temp file
-	tempfile mex_ind
-	save `mex_ind'
-
-
-
-	use "`path_in_stata'/VIVT105.dta",clear
-	drop p1-p3
-
-	tostring (ent v_sel), gen(ent_str v_sel_str) format("%02.0f")
-	tostring con, gen(con_str) format("%05.0f")
-
-	egen casa_short = concat(ent_str con_str v_sel_str)
-
-	* Merge with Individual files, keep only what matches
-	merge 1:m casa_short using `mex_ind', keep(match) nogen
-
-	* Overwrtwrite temp file
-	tempfile mex_ind
-	save `mex_ind'
-
-
-	use "`path_in_stata'/HOGT105.dta", clear
-
-	tostring (ent v_sel), gen(ent_str v_sel_str) format("%02.0f")
-	tostring con, gen(con_str) format("%05.0f")
-	tostring n_hog h_mud, gen(n_hog_str h_mud_str) format("%01.0f")
-
-	egen casa_long = concat(ent_str con_str v_sel_str n_hog_str h_mud_str)
-
-	* Merge with Individual files, keep only what matches
-	merge 1:m casa_long using `mex_ind', keep(match) nogen
-
-
-	*the harmonization is for the first three months of the year , any other month will be put to missing.
-	tab d_mes
-	*replace d_mes=. if d_mes == 4 | d_mes == 5 | d_mes == 12
-	tab d_mes, missing
-	*/
-
-*ISIC
-***first job
-	rename scian scian_orig
-	tostring p4a, gen(scian_help)
-	gen scian = substr(scian_help,1,3)
-	merge m:1 scian using "`path_in_stata'/SCIAN_07_3D_ISIC_4.dta", keep(master match) nogen
-*Note: rename necessary to allow for the second job code to generate a new cmo for the merge
-	rename scian scian_1
-	rename isic isic_1
-	rename scian_help scian_help_1
-***second job
-	tostring p7c, gen(scian_help)
-	gen scian = substr(scian_help,1,3)
-	merge m:1 scian using "`path_in_stata'/SCIAN_07_3D_ISIC_4.dta", keep(master match) nogen
-*Note: rename necessary to interpret scian
-	rename scian scian_2
-	rename isic isic_2
-	rename scian_help scian_help_2
+	*ISIC
+	***first job
+		rename scian scian_orig
+		tostring p4a, gen(scian_help)
+		gen scian = substr(scian_help,1,3)
+		merge m:1 scian using "`path_in_stata'/SCIAN_07_3D_ISIC_4.dta", keep(master match) nogen
+	*Note: rename necessary to allow for the second job code to generate a new cmo for the merge
+		rename scian scian_1
+		rename isic isic_1
+		rename scian_help scian_help_1
+	***second job
+		tostring p7c, gen(scian_help)
+		gen scian = substr(scian_help,1,3)
+		merge m:1 scian using "`path_in_stata'/SCIAN_07_3D_ISIC_4.dta", keep(master match) nogen
+	*Note: rename necessary to interpret scian
+		rename scian scian_2
+		rename isic isic_2
+		rename scian_help scian_help_2
 
 *ISCO
+
+*Note: the dta. 2019- onwards have in var p3 observations already converted to Sinco from CMO, no  need of conversion.
+
 ***then first job
-	tostring p3, gen(cmo)
-	merge m:1 cmo using "`path_in_stata'/CMO_09_ISCO_08.dta", keep(master match) nogen
+	tostring p3, gen(sinco)
+	merge m:1 sinco using "`path_in_stata'/SINCO_11_ISCO_08.dta", keep(master match) nogen
 *Note: rename necessary to allow for the second job code to generate a new cmo for the merge
-	rename cmo cmo_1
+	rename sinco sinco_1
 	rename isco isco_1
 
 ***then second job
-	tostring p7a, gen(cmo)
-	merge m:1 cmo using "`path_in_stata'/CMO_09_ISCO_08.dta", keep(master match) nogen
-*Note: rename necessary to interpret cmo
-	rename cmo cmo_2
+	tostring p7a, gen(sinco)
+	merge m:1 sinco using "`path_in_stata'/SINCO_11_ISCO_08.dta", keep(master match) nogen
+*Note: rename necessary to misinterpret cmo
+	rename sinco sinco_2
 	rename isco isco_2
-
 
 /*%%=============================================================================================
 	2: Survey & ID
@@ -535,29 +468,26 @@ merge 1:1 foliop using "`path_output'/baseCOE2T`x'.dta";
 
 
 *<_icls_v_>
-	gen icls_v = "ICLS-13"
+	gen icls_v = "ICLS-18"
 	label var icls_v "ICLS version(s) underlying questionnaire questions"
 *</_icls_v_>
 
 *<_isced_version_>
-	gen isced_version = "isced_1997"
+	gen isced_version = "isced_2011"
 	label var isced_version "Version of ISCED used for educat_isced"
 *</_isced_version_>
-
 
 *<_isco_version_>
 	gen isco_version = "isco_2008"
 	label var isco_version "Version of ISCO used"
-*</_isco_version_>
-
+*</_isco_version_
 
 *<_isic_version_>
 	gen isic_version = "isic_4"
-	label var isic_version "Version of ISIC used"
-*</_isic_version_>
+	label var isic_version "Version of ISIC used
 
 *<_year_>
-	gen int year = 2005
+	gen int year = 2023
 	label var year "Year of survey"
 *</_year_>
 
@@ -581,7 +511,7 @@ merge 1:1 foliop using "`path_output'/baseCOE2T`x'.dta";
 
 
 *<_int_year_>
-	gen int_year=2005
+	gen int_year=2023
 	label var int_year "Year of the interview"
 *</_int_year_>
 
@@ -592,7 +522,7 @@ merge 1:1 foliop using "`path_output'/baseCOE2T`x'.dta";
 	label value int_month lblint_month
 	label var int_month "Month of the interview"
 
-	*check int_Month out of the Q1
+	*check int_Month out of the Q4
 	tab int_month
 
 *</_int_month_>
@@ -636,13 +566,13 @@ merge 1:1 foliop using "`path_output'/baseCOE2T`x'.dta";
 
 
 *<_strata_>
-	gen strata = est_d
+	gen strata = est_d_tri
 	label var strata "Strata"
 *</_strata_>
 
 
 *<_wave_>
-	gen wave = "Q1"
+	gen wave = "Q4"
 	label var wave "Survey wave"
 *</_wave_>
 
@@ -665,48 +595,40 @@ merge 1:1 foliop using "`path_output'/baseCOE2T`x'.dta";
 
 
 *<_subnatid1_>
-	destring ent, replace
 	gen subnatid1 =ent
+	destring subnatid1, replace
 	label de lblsubnatid1  1 "1 - Aguas Calientes" 2 "2 - Baja California" 3 "3 - Baja California Sur" 4 " 4 - Campeche" 5 " 5 - Coahuila de Zaragoza" 6 "6 -  Colima" 7 "7 - Chiapas " 8 "8 - Chihuahua" 9 "9 - Distrito Federal" 10 " 10 - Durango " 11 " 11- Guanajuato " 12 " 12 - Guerrero" 13 "13 - Hidalgo " 14 " 14 -Jalisco " 15 " 15 - Michoacan de Ocampo " 16 " 16 - Morelos " 17 " 17 - Mexico " 18 " 18 - Nayarit " 19 " 19 - Nuevo León " 20 " 20 - Oaxaca " 21 " 21 - Puebla" 22 " 22 - Queretaro" 23 " 23 - Quintana Roo " 24 " 24 - San Luis Potosi" 25 " 25- Sinaloa " 26 " 26 - Sonora " 27 " 27 - Tabasco " 28 " 28 - Tamaulipas" 29 " 29 - Tlaxcala " 30 " 30 - Veracruz de Ignacio de la Llave " 31 " 31 - Yucatán " 32 " 32 - Zacatecas "
 	label values subnatid1 lblsubnatid1
-label var subnatid1 "Subnational ID at First Administrative Level"
+	label var subnatid1 "Subnational ID at First Administrative Level"
 *</_subnatid1_>
 
 
 *<_subnatid2_>
 *selected main cities from states
-	destring cd_a, replace
-	gen byte subnatid2 = cd_a
-	label de lblsubnatid2 1 "Mexico" 2 "Guadalajara" 3 "Monterrey" 4 "Puebla" 5 "Leon" 7 "San Luis Potosi" 8 "Merida" 9 "Chihuahua" 10 "Tampico" 12 "Veracruz" 13 "Acapulco" 14 "Aguacalientes" 15 "Morelia " 16 "Toluca" 17 "Saltillo" 18 "Villahermosa" 19 "Tuxtla Gutierrez" 21 "Tijuana" 24 "Culiacan" 25 "Hermosillo" 26 "Durango" 27 "Tepic" 28 "Campeche" 29 "Cuernavaca" 31 "Oaxaca" 32 "Zacatecas " 33 "Colima" 36 "Queretaro" 39 "Tlaxcala" 40 "La Paz " 41 "Cancun" 43 "Pachuca" 81 "Complemento Urbano Rural"
-	recode subnatid2 82/86=81
+	gen subnatid2 = cd_a
+	destring subnatid2, replace
+	label define lblsubnatid2 1 "Ciudad de México" 2 "Guadalajara" 3 "Monterrey" 4 "Puebla" 5 "León" 6 "Torreón" 7 "San Luis Potosí" 8 "Mérida" 9 "Chihuahua" 10 "Tampico" 12 "Veracruz" 13 "Acapulco" 14 "Aguascalientes" 15 "Morelia" 16 "Toluca" 17 "Saltillo" 18 "Villahermosa" 19 "Tuxtla Gutiérrez" 20 "Ciudad Juárez" 21 "Tijuana" 24 "Culiacán" 25 "Hermosillo" 26 "Durango" 27 "Tepic" 28 "Campeche" 29 "Cuernavaca" 30 "Coatzacoalcos" 31 "Oaxaca" 32 "Zacatecas" 33 "Colima" 36 "Querétaro" 39 "Tlaxcala" 40 "La Paz"41 "Cancún" 42 "Ciudad del Carmen" 43 "Pachuca" 44 "Mexicali" 46 "Reynosa" 52 "Tapachula" 81 "Complemento urbano-rural" 82 "Complemento urbano-rural" 83 "Complemento urbano-rural" 84 "Complemento urbano-rural" 85 "Complemento urbano-rural" 86 "Complemento urbano-rural"
 	label values subnatid2 lblsubnatid2
-
 	label var subnatid2 "Subnational ID at Second Administrative Level"
 *</_subnatid2_>
 
 
 *<_subnatid3_>
 *selected towns within selected cities from states
-	gen byte subnatid3 = loc
-	*label de lblsubnatid3 1 "1 - Name"
-	*label values subnatid3 lblsubnatid3
+	gen subnatid3 = mun
+	do "`path_in_do'/ent_mun_label.do"
+	label values subnatid3 lblsubnatid3	
 	label var subnatid3 "Subnational ID at Third Administrative Level"
 *</_subnatid3_>
 
 
 *<_subnatidsurvey_>
 	gen subnatidsurvey = "subnatid2"
-	*tostring subnatidsurvey, replace
 	label var subnatidsurvey "Administrative level at which survey is representative"
 *</_subnatidsurvey_>
 
 
 *<_subnatid1_prev_>
-/* <_subnatid1_prev>
-
-	subnatid1_prev is coded as missing unless the classification used for subnatid1 has changed since the previous survey.
-
-</_subnatid1_prev> */
 	gen subnatid1_prev = .
 	label var subnatid1_prev "Classification used for subnatid1 from previous survey"
 *</_subnatid1_prev_>
@@ -757,7 +679,7 @@ label var subnatid1 "Subnational ID at First Administrative Level"
 
 *<_age_>
 	gen age = eda
-	replace age = . if eda == 99
+replace age = . if eda == 99
 	label var age "Individual age"
 *</_age_>
 
@@ -785,7 +707,7 @@ label var subnatid1 "Subnational ID at First Administrative Level"
 	*as per the survey min age for labour being 15
 	replace relationharm=1 if age==max_age & head_count!=1 & relationharm!=1 & relationharm!=3 & age>15
 	replace head_count=1 if relationharm==1
-	*there is a problem with hh being children under 15 in Q1 (the number of households affected is rather small)
+	*there is a problem with hh being children under 15 in Q4 (the number of households affected is rather small)
 	drop head_count max_age
 
 
@@ -896,8 +818,6 @@ label var subnatid1 "Subnational ID at First Administrative Level"
 
 *<_migrated_from_code_>
 	gen migrated_from_code = .
-	*label de lblmigrated_from_code
-	*label values migrated_from_code lblmigrated_from_code
 	label var migrated_from_code "Code of migration area as subnatid level of migrated_from_cat"
 *</_migrated_from_code_>
 
@@ -1033,7 +953,6 @@ label var educy "Years of education"
 
 
 *<_educat7_>
-	*gen byte educat7 =
 	gen byte educat7=1 if educy==0
 	replace educat7=2 if cs_p13_1==2
 	replace educat7=3 if educy==6 & cs_p13_1==2
@@ -1181,7 +1100,6 @@ foreach v of local ed_var {
 	gen byte underemployment = .
 	replace underemployment=1 if  p8a==1 | p8a==3
 	replace underemployment = . if age < minlaborage & age != .
-	*recode underemployment .=0
 	replace underemployment=. if lstatus!=1
 	label var underemployment "Underemployment status"
 	la de lblunderemployment 0 "No" 1 "Yes"
@@ -1198,6 +1116,7 @@ foreach v of local ed_var {
 	la de lblnlfreason 1 "Student" 2 "Housekeeper" 3 "Retired" 4 "Disabled" 5 "Other"
 	label values nlfreason lblnlfreason
 *</_nlfreason_>
+
 
 *<_unempldur_l_>
 
@@ -1265,33 +1184,33 @@ foreach v of local ed_var {
 
 
 *<_industrycat_isic_>
-	gen industrycat_isic= isic_1
+gen industrycat_isic= isic_1
 	replace industrycat_isic="" if lstatus!=1
 	label var industrycat_isic "ISIC code of primary job 7 day recall"
 *</_industrycat_isic_>
 
 
 *<_industrycat10_>
-	gen industrycat10= substr(industrycat_isic, 1,2)
-	gen industrycat10_helper=.
-	replace industrycat10_helper=1 if industrycat10=="01" | industrycat10=="02" | industrycat10=="03"
-	replace industrycat10_helper=2 if industrycat10=="05" | industrycat10=="06" | industrycat10=="07" | industrycat10=="08"  | industrycat10=="09"
-	replace industrycat10_helper=3 if industrycat10=="10" | industrycat10=="11" | industrycat10=="12"  |industrycat10=="13" | industrycat10=="14" | industrycat10=="15" | industrycat10=="16" | industrycat10=="17" | industrycat10=="18" | industrycat10=="19" | industrycat10=="20" | industrycat10=="21" | industrycat10=="22" | industrycat10=="23" | industrycat10=="24" | industrycat10=="25" | industrycat10=="26" | industrycat10=="27" | industrycat10=="28" | industrycat10=="29" | industrycat10=="30" | industrycat10=="31" | industrycat10=="32" | industrycat10=="33"
-	replace industrycat10_helper=4 if industrycat10=="35" | industrycat10=="36" | industrycat10=="37" | industrycat10=="38" | industrycat10=="39"
-	replace industrycat10_helper=5 if industrycat10=="41" | industrycat10=="42" | industrycat10=="43"
-	replace industrycat10_helper=6 if industrycat10=="45" | industrycat10=="46" | industrycat10=="47" | industrycat10=="55"  | industrycat10=="56"
-	replace industrycat10_helper=7  if  industrycat10=="49" | industrycat10=="50" | industrycat10=="51" | industrycat10=="52" | industrycat10=="53" | industrycat10=="58" | industrycat10=="59" | industrycat10=="60" |industrycat10=="61" | industrycat10=="62" | industrycat10=="63"
-	replace industrycat10_helper=8 if industrycat10=="64" | industrycat10=="65" | industrycat10=="66" | industrycat10=="68" | industrycat10=="69"| industrycat10=="70" | industrycat10=="71" | industrycat10=="72" | industrycat10=="73" | industrycat10=="74" | industrycat10=="75" | industrycat10=="77" | industrycat10=="78" | industrycat10=="79" | industrycat10=="80" | industrycat10=="81" | industrycat10=="82"
-	replace industrycat10_helper=9 if industrycat10=="84"
-	replace industrycat10_helper=10 if industrycat10=="85" | industrycat10=="86" | industrycat10=="87" | industrycat10=="88" | industrycat10=="90" | industrycat10=="91" | industrycat10=="92" | industrycat10=="93" | industrycat10=="94" | industrycat10=="95" | industrycat10=="96" | industrycat10=="97" | industrycat10=="98" | industrycat10=="99"
+gen industrycat10= substr(industrycat_isic, 1,2)
+gen industrycat10_helper=.
+replace industrycat10_helper=1 if industrycat10=="01" | industrycat10=="02" | industrycat10=="03"
+replace industrycat10_helper=2 if industrycat10=="05" | industrycat10=="06" | industrycat10=="07" | industrycat10=="08"  | industrycat10=="09"
+replace industrycat10_helper=3 if industrycat10=="10" | industrycat10=="11" | industrycat10=="12"  |industrycat10=="13" | industrycat10=="14" | industrycat10=="15" | industrycat10=="16" | industrycat10=="17" | industrycat10=="18" | industrycat10=="19" | industrycat10=="20" | industrycat10=="21" | industrycat10=="22" | industrycat10=="23" | industrycat10=="24" | industrycat10=="25" | industrycat10=="26" | industrycat10=="27" | industrycat10=="28" | industrycat10=="29" | industrycat10=="30" | industrycat10=="31" | industrycat10=="32" | industrycat10=="33"
+replace industrycat10_helper=4 if industrycat10=="35" | industrycat10=="36" | industrycat10=="37" | industrycat10=="38" | industrycat10=="39"
+replace industrycat10_helper=5 if industrycat10=="41" | industrycat10=="42" | industrycat10=="43"
+replace industrycat10_helper=6 if industrycat10=="45" | industrycat10=="46" | industrycat10=="47" | industrycat10=="55"  | industrycat10=="56"
+replace industrycat10_helper=7  if  industrycat10=="49" | industrycat10=="50" | industrycat10=="51" | industrycat10=="52" | industrycat10=="53" | industrycat10=="58" | industrycat10=="59" | industrycat10=="60" |industrycat10=="61" | industrycat10=="62" | industrycat10=="63"
+replace industrycat10_helper=8 if industrycat10=="64" | industrycat10=="65" | industrycat10=="66" | industrycat10=="68" | industrycat10=="69"| industrycat10=="70" | industrycat10=="71" | industrycat10=="72" | industrycat10=="73" | industrycat10=="74" | industrycat10=="75" | industrycat10=="77" | industrycat10=="78" | industrycat10=="79" | industrycat10=="80" | industrycat10=="81" | industrycat10=="82"
+replace industrycat10_helper=9 if industrycat10=="84"
+replace industrycat10_helper=10 if industrycat10=="85" | industrycat10=="86" | industrycat10=="87" | industrycat10=="88" | industrycat10=="90" | industrycat10=="91" | industrycat10=="92" | industrycat10=="93" | industrycat10=="94" | industrycat10=="95" | industrycat10=="96" | industrycat10=="97" | industrycat10=="98" | industrycat10=="99"
 	replace industrycat10_helper=. if lstatus!=1
 	drop industrycat10
 	rename industrycat10_helper industrycat10
 	label var industrycat10 "1 digit industry classification, primary job 7 day recall"
 	la de lblindustrycat10 1 "Agriculture" 2 "Mining" 3 "Manufacturing" 4 "Public utilities" 5 "Construction"  6 "Commerce" 7 "Transport and Comnunications" 8 "Financial and Business Services" 9 "Public Administration" 10 "Other Services, Unspecified"
 	label values industrycat10 lblindustrycat10
-
 *</_industrycat10_>
+
 
 *<_industrycat4_>
 	gen byte industrycat4 = industrycat10
@@ -1302,13 +1221,13 @@ foreach v of local ed_var {
 	replace industrycat4=. if lstatus!=1
 *</_industrycat4_>
 
+
 *<_occup_orig_>
 	gen occup_orig = p3
 	label var occup_orig "Original occupation record primary job 7 day recall"
 *</_occup_orig_>
 
 *<_occup_>
-
 	destring isco_1, gen(occup_helper)
 	gen byte occup = floor(occup_helper/1000)
 	drop occup_helper
@@ -1322,10 +1241,11 @@ replace occup=. if occup==0
 	gen occup_isco = isco_1
 	replace occup_isco="" if lstatus!=1
 	label var occup_isco "ISCO code of primary job 7 day recall"
+
 *</_occup_isco_>
 
 *<_occup_skill_>
-	gen  occup_skill= substr(isco_1, 1,2)
+gen  occup_skill= substr(isco_1, 1,2)
 	gen occup_skill_helper=.
 	replace occup_skill_helper=3 if occup_skill=="10" |  occup_skill=="11" |  occup_skill=="12" |  occup_skill=="13" |  occup_skill=="14" | occup_skill=="20" | occup_skill=="21" | occup_skill=="22" | occup_skill=="23" | occup_skill=="24" | occup_skill=="26"| occup_skill=="23" | occup_skill=="30" | occup_skill=="31" | occup_skill=="32" | occup_skill=="33" | occup_skill=="34" | occup_skill=="35"
 	replace occup_skill_helper=2 if occup_skill=="40" |  occup_skill=="41" |  occup_skill=="42" |  occup_skill=="43" |  occup_skill=="44" | occup_skill=="50" | occup_skill=="51" | occup_skill=="52" | occup_skill=="53" | occup_skill=="54" | occup_skill=="60"| occup_skill=="61" | occup_skill=="62" | occup_skill=="63" | occup_skill=="70" | occup_skill=="71" | occup_skill=="72" | occup_skill=="73" | occup_skill=="74" | occup_skill=="75" | occup_skill=="80" | occup_skill=="81" | occup_skill=="82" | occup_skill=="83"
@@ -1333,10 +1253,11 @@ replace occup=. if occup==0
 	replace occup_skill_helper=. if lstatus!=1
 	drop occup_skill
 	rename occup_skill_helper occup_skill
-		la de lblskill 1 "Low skill" 2 "Medium skill" 3 "High skill"
+	la de lblskill 1 "Low skill" 2 "Medium skill" 3 "High skill"
 	label var occup_skill "Skill based on ISCO standard primary job 7 day recall"
 	label values occup_skill lbloccupskill
 *</_occup_skill_>
+
 
 *<_wage_no_compen_>
 	gen double wage_no_compen =.
@@ -1346,10 +1267,25 @@ replace occup=. if occup==0
 	label var wage_no_compen "Last wage payment primary job 7 day recall"
 *</_wage_no_compen_>
 
+
 *<_unitwage_>
-	*gen byte unitwage = p6b1
+
 	gen byte unitwage = 5
 	label var unitwage "Last wages' time unit primary job 7 day recall"
+	/*
+	LFS 				GLD
+	(1) Cada mes  -  	(1) Daily
+	(2) every 15 days - (2) Weekly
+	(3) every week - 	(3) every two weeks
+	(4) daily  - 		(4) bimonthly
+	(5) other		  	(5) monthly
+	(6) paid by product (6) trimester
+	(7) don't know		(7) biannual
+	(8) no reply		(8) annualy
+	(9) 				(9) hourly
+	(10)				(10) other
+
+	*/
 	la de lblunitwage 1 "Daily" 2 "Weekly" 3 "Every two weeks" 4 "Bimonthly"  5 "Monthly" 6 "Trimester" 7 "Biannual" 8 "Annually" 9 "Hourly" 10 "Other"
 	replace unitwage=. if wage_no_compen==.
 	label values unitwage lblunitwage
@@ -1382,9 +1318,9 @@ The restrictions below could be completed with the following, yet these are not 
 <_whours_note_>*/
 
 *this variable has outliers starting in 85 to 168 hours of work
-	gen whours=p5c_thrs
+	gen whours=p5b_thrs
 *replace if not the usual hours in the week
-	replace whours=p5e_thrs if p5a==2
+	replace whours=p5d_thrs if p5a==2
 
 	replace whours=. if lstatus!=1
 	replace whours=. if p4==4
@@ -1395,12 +1331,12 @@ The restrictions below could be completed with the following, yet these are not 
 
 *<_wmonths_>
 	forvalues i=1/12 {
-	    gen double new_p5g_`i'=1 if p5g`i'==`i'
-		recode new_p5g_`i'(.=0)
+	    gen double new_p5f_`i'=1 if p5f`i'==`i'
+		recode new_p5f_`i'(.=0)
 	}
-	gen wmonths = new_p5g_1 + new_p5g_2 + new_p5g_3 + new_p5g_4 + new_p5g_5 + new_p5g_6 + new_p5g_7 + new_p5g_8+ new_p5g_9 + new_p5g_10 + new_p5g_11 + new_p5g_12
-	replace wmonths=12 if p5g14==14
-	replace wmonths=. if p5g13==13 | p5g15==15 | p5g99==99
+	gen wmonths = new_p5f_1 + new_p5f_2 + new_p5f_3 + new_p5f_4 + new_p5f_5 + new_p5f_6 + new_p5f_7 + new_p5f_8+ new_p5f_9 + new_p5f_10 + new_p5f_11 + new_p5f_12
+	replace wmonths=12 if p5f14==14
+	replace wmonths=. if p5f13==13 | p5f15==15 | p5f99==99
 	replace wmonths=. if lstatus!=1
 	replace wage_no_compen=. if wmonths==0
 	replace wmonths=. if wmonths==0
@@ -1426,7 +1362,7 @@ The restrictions below could be completed with the following, yet these are not 
 
 
 *<_contract_>
-	gen byte contract=p3j
+	gen byte contract=p3i
 	recode contract 2=0 9=.
 	replace contract=. if lstatus!=1
 	label var contract "Employment has contract primary job 7 day recall"
@@ -1435,7 +1371,7 @@ The restrictions below could be completed with the following, yet these are not 
 *</_contract_>
 
 
-*<_healthins_>
+/*<_healthins_> Does not have this question for Q4 of this year
 	gen byte healthins = 1 if p3m5 == 5
 	recode healthins .=0
 	replace healthins=. if lstatus!=1
@@ -1455,7 +1391,7 @@ The restrictions below could be completed with the following, yet these are not 
 *</_socialsec_>
 
 
-*<_union_>
+*<_union_> Does not have this question for Q4 for this year
 	gen byte union = 1 if p3i == 1
 	replace union = 0 if p3i == 2
 	replace union =. if p3i == 3
@@ -1463,77 +1399,76 @@ The restrictions below could be completed with the following, yet these are not 
 	label var union "Union membership at primary job 7 day recall"
 	la de lblunion 0 "Not union member" 1 "Union member"
 	label values union lblunion
-*</_union_>
+*</_union_>*/
+
 
 *<_firmsize_l_>
-gen byte firmsize_l = .
-replace firmsize_l=1 if p3q==01
-replace firmsize_l=2 if p3q==02
-replace firmsize_l=6 if p3q==03
-replace firmsize_l=11 if p3q==04
-replace firmsize_l=16 if p3q==05
-replace firmsize_l=21 if p3q==06
-replace firmsize_l=31 if p3q==07
-replace firmsize_l=51 if p3q==08
-replace firmsize_l = 101 if p3q==09
-replace firmsize_l = 251 if p3q==10
-replace firmsize_l = 501 if p3q==11
+	gen byte firmsize_l = .
+	 replace firmsize_l=1 if p3l==01
+	 replace firmsize_l=2 if p3l==02
+	 replace firmsize_l=6 if p3l==03
+	 replace firmsize_l=11 if p3l==04
+	 replace firmsize_l=16 if p3l==05
+	 replace firmsize_l=21 if p3l==06
+	 replace firmsize_l=31 if p3l==07
+	 replace firmsize_l=51 if p3l==08
+	 replace firmsize_l = 101 if p3l==09
+	 replace firmsize_l = 251 if p3l==10
+	 replace firmsize_l = 501 if p3l==11
 
-* Add self-employed
-replace firmsize_l = 1 if empstat == 4
+	 * Add self-employed
+	 replace firmsize_l = 1 if empstat == 4
 
-		 * Add employer
-		     replace firmsize_l = 2 if inrange(p3g_tot, 1, 4)
-		     replace firmsize_l = 6 if inrange(p3g_tot, 5, 9)
-		     replace firmsize_l = 11 if inrange(p3g_tot, 10, 14)
-		     replace firmsize_l = 16 if inrange(p3g_tot, 15, 19)
-		     replace firmsize_l = 21 if inrange(p3g_tot, 20, 29)
-		     replace firmsize_l = 31 if inrange(p3g_tot, 30, 49)
-		     replace firmsize_l = 51 if inrange(p3g_tot, 50, 99)
-		     replace firmsize_l = 101 if inrange(p3g_tot, 100, 249)
-		     replace firmsize_l = 251 if inrange(p3g_tot, 250, 499)
-		     replace firmsize_l = 501 if inrange(p3g_tot, 500, 999999)
+	 * Add employer
+	     replace firmsize_l = 2 if inrange(p3g_tot, 1, 4)
+	     replace firmsize_l = 6 if inrange(p3g_tot, 5, 9)
+	     replace firmsize_l = 11 if inrange(p3g_tot, 10, 14)
+	     replace firmsize_l = 16 if inrange(p3g_tot, 15, 19)
+	     replace firmsize_l = 21 if inrange(p3g_tot, 20, 29)
+	     replace firmsize_l = 31 if inrange(p3g_tot, 30, 49)
+	     replace firmsize_l = 51 if inrange(p3g_tot, 50, 99)
+	     replace firmsize_l = 101 if inrange(p3g_tot, 100, 249)
+	     replace firmsize_l = 251 if inrange(p3g_tot, 250, 499)
+	     replace firmsize_l = 501 if inrange(p3g_tot, 500, 999999)
 
-replace firmsize_l=. if lstatus!=1
-label var firmsize_l "Firm size (lower bracket) primary job 7 day recall"
+	 replace firmsize_l=. if lstatus!=1
+	label var firmsize_l "Firm size (lower bracket) primary job 7 day recall"
 *</_firmsize_l_>
 
 
 *<_firmsize_u_>
-gen byte firmsize_u = .
-replace firmsize_u=1 if p3q==01
-replace firmsize_u=5 if p3q==02
-replace firmsize_u=10 if p3q==03
-replace firmsize_u=15 if p3q==04
-replace firmsize_u=20 if p3q==05
-replace firmsize_u=30 if p3q==06
-replace firmsize_u=50 if p3q==07
-replace firmsize_u=100 if p3q==08
-replace firmsize_u = 250 if p3q==09
-replace firmsize_u = 500 if p3q==10
-replace firmsize_u = . if p3q==11
 
-* Add self-employed
-replace firmsize_u = 1 if empstat == 4
+	gen byte firmsize_u = .
+		replace firmsize_u=1 if p3l==01
+		replace firmsize_u=5 if p3l==02
+		replace firmsize_u=10 if p3l==03
+		replace firmsize_u=15 if p3l==04
+		replace firmsize_u=20 if p3l==05
+		replace firmsize_u=30 if p3l==06
+		replace firmsize_u=50 if p3l==07
+		replace firmsize_u=100 if p3l==08
+		replace firmsize_u = 250 if p3l==09
+		replace firmsize_u = 500 if p3l==10
+		replace firmsize_u = . if p3l==11
 
-		 * Add employer
-		      replace firmsize_u = 5 if inrange(p3g_tot, 1, 4)
-		      replace firmsize_u = 10 if inrange(p3g_tot, 5, 9)
-		      replace firmsize_u = 15 if inrange(p3g_tot, 10, 14)
-		      replace firmsize_u = 20 if inrange(p3g_tot, 15, 19)
-		      replace firmsize_u = 30 if inrange(p3g_tot, 20, 29)
-		      replace firmsize_u = 50 if inrange(p3g_tot, 30, 49)
-		      replace firmsize_u = 100 if inrange(p3g_tot, 50, 99)
-		      replace firmsize_u = 250 if inrange(p3g_tot, 100, 249)
-		      replace firmsize_u = 500 if  inrange(p3g_tot, 250, 499)
-		      replace firmsize_u = . if inrange(p3g_tot, 500, 999999)
+		* Add self-employed
+		replace firmsize_u = 1 if empstat == 4
 
-replace firmsize_u=. if lstatus!=1
-label var firmsize_u "Firm size (lower bracket) primary job 7 day recall"
+		* Add employer
+		     replace firmsize_u = 5 if inrange(p3g_tot, 1, 4)
+		     replace firmsize_u = 10 if inrange(p3g_tot, 5, 9)
+		     replace firmsize_u = 15 if inrange(p3g_tot, 10, 14)
+		     replace firmsize_u = 20 if inrange(p3g_tot, 15, 19)
+		     replace firmsize_u = 30 if inrange(p3g_tot, 20, 29)
+		     replace firmsize_u = 50 if inrange(p3g_tot, 30, 49)
+		     replace firmsize_u = 100 if inrange(p3g_tot, 50, 99)
+		     replace firmsize_u = 250 if inrange(p3g_tot, 100, 249)
+		     replace firmsize_u = 500 if  inrange(p3g_tot, 250, 499)
+		     replace firmsize_u = . if inrange(p3g_tot, 500, 999999)
+
+		replace firmsize_u=. if lstatus!=1
+	label var firmsize_u "Firm size (upper bracket) primary job 7 day recall"
 *</_firmsize_u_>
-
-
-
 
 }
 
@@ -1579,20 +1514,19 @@ label var firmsize_u "Firm size (lower bracket) primary job 7 day recall"
 
 
 *<_industrycat10_2_>
-
-	gen industrycat10_2= substr(industrycat_isic_2, 1,2)
-	gen industrycat10_2_helper=.
-	replace industrycat10_2_helper=1 if industrycat10_2=="01" | industrycat10_2=="02" | industrycat10_2=="03"
-	replace industrycat10_2_helper=2 if industrycat10_2=="05" | industrycat10_2=="06" | industrycat10_2=="07" | industrycat10_2=="08"  | industrycat10_2=="09"
-	replace industrycat10_2_helper=3 if industrycat10_2=="10" | industrycat10_2=="11" | industrycat10_2=="12"  |industrycat10_2=="13" | industrycat10_2=="14" | industrycat10_2=="15" | industrycat10_2=="16" | industrycat10_2=="17" | industrycat10_2=="18" | industrycat10_2=="19" | industrycat10_2=="20" | industrycat10_2=="21" | industrycat10_2=="22" | industrycat10_2=="23" | industrycat10_2=="24" | industrycat10_2=="25" | industrycat10_2=="26" | industrycat10_2=="27" | industrycat10_2=="28" | industrycat10_2=="29" | industrycat10_2=="30" | industrycat10_2=="31" | industrycat10_2=="32" | industrycat10_2=="33"
-	replace industrycat10_2_helper=4 if industrycat10_2=="35" | industrycat10_2=="36" | industrycat10_2=="37" | industrycat10_2=="38" | industrycat10_2=="39"
-	replace industrycat10_2_helper=5 if industrycat10_2=="41" | industrycat10_2=="42" | industrycat10_2=="43"
-	replace industrycat10_2_helper=6 if industrycat10_2=="45" | industrycat10_2=="46" | industrycat10_2=="47" | industrycat10_2=="55"  | industrycat10_2=="56"
-	replace industrycat10_2_helper=7  if  industrycat10_2=="49" | industrycat10_2=="50" | industrycat10_2=="51" | industrycat10_2=="52" | industrycat10_2=="53" | industrycat10_2=="58" | industrycat10_2=="59" | industrycat10_2=="60" |industrycat10_2=="61" | industrycat10_2=="62" | industrycat10_2=="63"
-	replace industrycat10_2_helper=8 if industrycat10_2=="64" | industrycat10_2=="65" | industrycat10_2=="66" | industrycat10_2=="68" | industrycat10_2=="69"| industrycat10_2=="70" | industrycat10_2=="71" | industrycat10_2=="72" | industrycat10_2=="73" | industrycat10_2=="74" | industrycat10_2=="75" | industrycat10_2=="77" | industrycat10_2=="78" | industrycat10_2=="79" | industrycat10_2=="80" | industrycat10_2=="81" | industrycat10_2=="82"
-	replace industrycat10_2_helper=9 if industrycat10_2=="84"
-	replace industrycat10_2_helper=10 if industrycat10_2=="85" | industrycat10_2=="86" | industrycat10_2=="87" | industrycat10_2=="88" | industrycat10_2=="90" | industrycat10_2=="91" | industrycat10_2=="92" | industrycat10_2=="93" | industrycat10_2=="94" | industrycat10_2=="95" | industrycat10_2=="96" | industrycat10_2=="97" | industrycat10_2=="98" | industrycat10_2=="99"
-	replace industrycat10_2_helper=. if lstatus!=1
+gen industrycat10_2= substr(industrycat_isic_2, 1,2)
+gen industrycat10_2_helper=.
+replace industrycat10_2_helper=1 if industrycat10_2=="01" | industrycat10_2=="02" | industrycat10_2=="03"
+replace industrycat10_2_helper=2 if industrycat10_2=="05" | industrycat10_2=="06" | industrycat10_2=="07" | industrycat10_2=="08"  | industrycat10_2=="09"
+replace industrycat10_2_helper=3 if industrycat10_2=="10" | industrycat10_2=="11" | industrycat10_2=="12"  |industrycat10_2=="13" | industrycat10_2=="14" | industrycat10_2=="15" | industrycat10_2=="16" | industrycat10_2=="17" | industrycat10_2=="18" | industrycat10_2=="19" | industrycat10_2=="20" | industrycat10_2=="21" | industrycat10_2=="22" | industrycat10_2=="23" | industrycat10_2=="24" | industrycat10_2=="25" | industrycat10_2=="26" | industrycat10_2=="27" | industrycat10_2=="28" | industrycat10_2=="29" | industrycat10_2=="30" | industrycat10_2=="31" | industrycat10_2=="32" | industrycat10_2=="33"
+replace industrycat10_2_helper=4 if industrycat10_2=="35" | industrycat10_2=="36" | industrycat10_2=="37" | industrycat10_2=="38" | industrycat10_2=="39"
+replace industrycat10_2_helper=5 if industrycat10_2=="41" | industrycat10_2=="42" | industrycat10_2=="43"
+replace industrycat10_2_helper=6 if industrycat10_2=="45" | industrycat10_2=="46" | industrycat10_2=="47" | industrycat10_2=="55"  | industrycat10_2=="56"
+replace industrycat10_2_helper=7  if  industrycat10_2=="49" | industrycat10_2=="50" | industrycat10_2=="51" | industrycat10_2=="52" | industrycat10_2=="53" | industrycat10_2=="58" | industrycat10_2=="59" | industrycat10_2=="60" |industrycat10_2=="61" | industrycat10_2=="62" | industrycat10_2=="63"
+replace industrycat10_2_helper=8 if industrycat10_2=="64" | industrycat10_2=="65" | industrycat10_2=="66" | industrycat10_2=="68" | industrycat10_2=="69"| industrycat10_2=="70" | industrycat10_2=="71" | industrycat10_2=="72" | industrycat10_2=="73" | industrycat10_2=="74" | industrycat10_2=="75" | industrycat10_2=="77" | industrycat10_2=="78" | industrycat10_2=="79" | industrycat10_2=="80" | industrycat10_2=="81" | industrycat10_2=="82"
+replace industrycat10_2_helper=9 if industrycat10_2=="84"
+replace industrycat10_2_helper=10 if industrycat10_2=="85" | industrycat10_2=="86" | industrycat10_2=="87" | industrycat10_2=="88" | industrycat10_2=="90" | industrycat10_2=="91" | industrycat10_2=="92" | industrycat10_2=="93" | industrycat10_2=="94" | industrycat10_2=="95" | industrycat10_2=="96" | industrycat10_2=="97" | industrycat10_2=="98" | industrycat10_2=="99"
+replace industrycat10_2_helper=. if lstatus!=1
 	drop industrycat10_2
 	rename industrycat10_2_helper industrycat10_2
 	label var industrycat10_2 "1 digit industry classification, primary job 7 day recall"
@@ -1614,6 +1548,13 @@ label var firmsize_u "Firm size (lower bracket) primary job 7 day recall"
 	label var occup_orig_2 "Original occupation record secondary job 7 day recall"
 *</_occup_orig_2_>
 
+
+*<_occup_isco_2_>
+		gen occup_isco_2 = isco_2
+	replace occup_isco_2="" if lstatus!=1
+	label var occup_isco_2 "ISCO code of secondary job 7 day recall"
+*</_occup_isco_2_>
+
 *<_occup_2_>
 	destring isco_2, gen(occup_helper_2)
 	gen byte occup_2 = floor(occup_helper_2/1000)
@@ -1621,12 +1562,6 @@ label var firmsize_u "Firm size (lower bracket) primary job 7 day recall"
 	label var occup_2 "1 digit occupational classification secondary job 7 day recall"
 	label values occup_2 lbloccup
 *</_occup_2_>
-
-*<_occup_isco_2_>
-	gen occup_isco_2 = isco_2
-	replace occup_isco_2="" if lstatus!=1
-	label var occup_isco_2 "ISCO code of secondary job 7 day recall"
-*</_occup_isco_2_>
 
 *<_occup_skill_2_>
 	gen  occup_skill_2= substr(isco_2, 1,2)
@@ -1673,13 +1608,43 @@ label var firmsize_u "Firm size (lower bracket) primary job 7 day recall"
 
 
 *<_firmsize_l_2_>
-	gen byte firmsize_l_2 = p7e
+	gen byte firmsize_l_2 = .
+/*	   replace firmsize_l_2=1 if p7e==01
+	   replace firmsize_l_2=2 if p7e==02
+	   replace firmsize_l_2=6 if p7e==03
+	   replace firmsize_l_2=11 if p7e==04
+	   replace firmsize_l_2=16 if p7e==05
+	   replace firmsize_l_2=21 if p7e==06
+	   replace firmsize_l_2=31 if p7e==07
+	   replace firmsize_l_2=51 if p7e==08
+	   replace firmsize_l_2 = 101 if p7e==09
+	   replace firmsize_l_2 = 251 if p7e==10
+	   replace firmsize_l_2 = 501 if p7e==11 */
+
+	   * Add self-employed
+	   replace firmsize_l_2 = 1 if empstat_2 == 4
+	    replace firmsize_l_2=. if lstatus!=1
 	label var firmsize_l_2 "Firm size (lower bracket) secondary job 7 day recall"
 *</_firmsize_l_2_>
 
 
 *<_firmsize_u_2_>
-	gen byte firmsize_u_2 = p7e
+	gen byte firmsize_u_2 = .
+/*	   replace firmsize_u_2=1 if p7e==01
+	   replace firmsize_u_2=5 if p7e==02
+	   replace firmsize_u_2=10 if p7e==03
+	   replace firmsize_u_2=15 if p7e==04
+	   replace firmsize_u_2=20 if p7e==05
+	   replace firmsize_u_2=30 if p7e==06
+	   replace firmsize_u_2=50 if p7e==07
+	   replace firmsize_u_2=100 if p7e==08
+	   replace firmsize_u_2 = 250 if p7e==09
+	   replace firmsize_u_2 = 500 if p7e==10
+	   replace firmsize_u_2 = . if p7e==11 */
+
+	   * Add self-employed
+	   replace firmsize_u_2 = 1 if empstat_2 == 4
+	      replace firmsize_u_2=. if lstatus!=1
 	label var firmsize_u_2 "Firm size (upper bracket) secondary job 7 day recall"
 *</_firmsize_u_2_>
 
@@ -1707,9 +1672,10 @@ label var firmsize_u "Firm size (lower bracket) primary job 7 day recall"
 
 *----------8.5: 7 day reference total summary------------------------------*
 
+
 *<_t_hours_total_>
+/* approximate hours worked in a year 48 ILO standard */
 	gen t_hours_total =(whours*4)*wmonths
-	*
 	label var t_hours_total "Annualized hours worked in all jobs 7 day recall"
 *</_t_hours_total_>
 
@@ -2112,7 +2078,245 @@ label var firmsize_u "Firm size (lower bracket) primary job 7 day recall"
 	label var laborincome "Total annual individual labor income in all jobs, incl. bonuses, etc."
 *</_laborincome_>
 
+*<_povertyincome_>
+	#delimit ;
+	
+	di in red "Promedio trimestral de los valores de la  
+	Línea de Pobreza Extrema por Ingresos" ;
 
+	scalar  uT105 	=	754.20	; 
+	scalar  rT105 	=	556.78	; 
+	scalar  uT205 	=	778.81	; 
+	scalar  rT205 	=	581.33	; 
+	scalar  uT305 	=	779.81	; 
+	scalar  rT305 	=	579.00	; 
+	scalar  uT405 	=	777.34	; 
+	scalar  rT405 	=	574.19	; 
+
+	scalar  uT106 	=	793.88	; 
+	scalar  rT106 	=	589.73	; 
+	scalar  uT206 	=	788.75	; 
+	scalar  rT206 	=	583.12	; 
+	scalar  uT306 	=	805.16	; 
+	scalar  rT306 	=	599.09	; 
+	scalar  uT406 	=	834.08	; 
+	scalar  rT406 	=	629.22	; 
+
+	scalar  uT107 	=	851.23	; 
+	scalar  rT107 	=	641.50	; 
+	scalar  uT207 	=	840.49	; 
+	scalar  rT207 	=	629.76	; 
+	scalar  uT307 	=	846.91	; 
+	scalar  rT307 	=	634.21	; 
+	scalar  uT407 	=	866.83	; 
+	scalar  rT407 	=	650.59	; 
+
+	scalar  uT108 	=	875.77	; 
+	scalar  rT108 	=	655.79	; 
+	scalar  uT208 	=	893.87	; 
+	scalar  rT208 	=	671.92	; 
+	scalar  uT308 	=	915.77	; 
+	scalar  rT308 	=	689.23	; 
+	scalar  uT408 	=	945.75	; 
+	scalar  rT408 	=	715.18	; 
+
+	scalar  uT109 	=	959.84	; 
+	scalar  rT109 	=	724.50	; 
+	scalar  uT209 	=	982.88	; 
+	scalar  rT209 	=	747.36	; 
+	scalar  uT309 	=	996.59	; 
+	scalar  rT309 	=	758.12	; 
+	scalar  uT409 	=	998.91	; 
+	scalar  rT409 	=	759.10	; 
+
+	scalar  uT110 	=	1026.57	; 
+	scalar  rT110 	=	780.73	; 
+	scalar  uT210 	=	1017.39	; 
+	scalar  rT210 	=	769.93	; 
+	scalar  uT310 	=	1008.45	; 
+	scalar  rT310 	=	757.71  ; 
+	scalar  uT410 	=	1032.81	; 
+	scalar  rT410 	=	779.66	; 
+
+	scalar  uT111 	=	1049.07	; 
+	scalar  rT111 	=	791.31  ; 
+	scalar  uT211 	=	1049.74	; 
+	scalar  rT211 	=	793.00  ; 
+	scalar  uT311 	=	1051.53	; 
+	scalar  rT311 	=	794.21  ; 
+	scalar  uT411 	=	1076.46	; 
+	scalar  rT411 	=	817.32  ; 
+
+	scalar  uT112 	=	1106.36	; 
+	scalar  rT112 	=	843.60  ; 
+	scalar  uT212 	=	1113.08	; 
+	scalar  rT212 	=	847.74  ; 
+	scalar  uT312 	=	1152.23	; 
+	scalar  rT312 	=	884.25  ; 
+	scalar  uT412 	=	1172.86	; 
+	scalar  rT412 	=	901.01  ; 
+
+	scalar  uT113 	=	1185.68	; 
+	scalar  rT113 	=	908.25  ; 
+	scalar  uT213 	=	1197.91	; 
+	scalar  rT213 	=	918.90  ; 
+	scalar  uT313 	=	1197.24	; 
+	scalar  rT313 	=	913.56  ; 
+	scalar  uT413 	=	1220.45	; 
+	scalar  rT413 	=	934.09  ; 
+
+	scalar  uT114 	=	1252.56	; 
+	scalar  rT114 	=	952.71  ; 
+	scalar  uT214 	=	1243.86	; 
+	scalar  rT214 	=	939.94  ; 
+	scalar  uT314 	=	1264.97	; 
+	scalar  rT314 	=	954.15  ; 
+	scalar  uT414 	=	1295.15	; 
+	scalar  rT414 	=	982.12  ; 
+
+	scalar  uT115 	=	1296.14	; 
+	scalar  rT115 	=	981.50  ; 
+	scalar  uT215 	=	1300.42	; 
+	scalar  rT215 	=	985.56  ; 
+	scalar  uT315 	=	1312.35	; 
+	scalar  rT315 	=	992.04  ; 
+	scalar  uT415 	=	1329.88	; 
+	scalar  rT415 	=	1006.05	; 
+
+	scalar  uT116 	=	1366.93	; 
+	scalar  rT116 	=	1039.95	; 
+	scalar  uT216 	=	1359.11	; 
+	scalar  rT216 	=	1028.42	; 
+	scalar  uT316 	=	1358.61	; 
+	scalar  rT316 	=	1025.84	; 
+	scalar  uT416 	=	1388.35	; 
+	scalar  rT416 	=	1054.02	; 
+
+	scalar  uT117 	=	1407.01	; 
+	scalar  rT117 	=	1061.68	; 
+	scalar  uT217 	=	1439.17	; 
+	scalar  rT217 	=	1090.56	; 
+	scalar  uT317 	=	1490.80	; 
+	scalar  rT317 	=	1136.26	; 
+	scalar  uT417 	=	1501.22	; 
+	scalar  rT417 	=	1141.14	; 
+
+	scalar  uT118 	=	1509.99	; 
+	scalar  rT118 	=	1144.85	; 
+	scalar  uT218 	=	1508.32	; 
+	scalar  rT218 	=	1139.69	; 
+	scalar  uT318 	=	1537.71	; 
+	scalar  rT318 	=	1159.55	; 
+	scalar  uT418 	=	1564.27	; 
+	scalar  rT418 	=	1186.53	; 
+
+	scalar  uT119 	=	1594.81	; 
+	scalar  rT119 	=	1209.52	; 
+	scalar  uT219 	=	1597.63	; 
+	scalar  rT219 	=	1209.34	; 
+	scalar  uT319 	=	1604.31	; 
+	scalar  rT319 	=	1212.42	; 
+	scalar  uT419 	=	1619.78	; 
+	scalar  rT419 	=	1225.79	; 
+
+	scalar  uT120 	=	1664.71	; 
+	scalar  rT120 	=	1266.14	; 
+	scalar  uT320 	=	1701.39	; 
+	scalar  rT320 	=	1298.60	; 
+	scalar  uT420 	=	1719.75	; 
+	scalar  rT420 	=	1313.92	; 
+
+	scalar  uT121 	=	1732.14	; 
+	scalar  rT121 	=	1317.79	; 
+	scalar  uT221 	=	1777.32	; 
+	scalar  rT221 	=	1358.60	; 
+	scalar  uT321 	=	1828.63	; 
+	scalar  rT321 	=	1400.08	; 
+	scalar  uT421 	=	1877.13	; 
+	scalar  rT421 	=	1443.29	; 
+
+	scalar  uT122	=	1951.74 ; 
+	scalar  rT122 	=	1498.46	; 
+	scalar  uT222	=	1990.99 ; 
+	scalar  rT222 	=	1530.41	; 
+	scalar  uT322	=	2081.04 ; 
+	scalar  rT322 	=	1597.57	;
+	scalar  uT422	=	2115.73 ; 
+	scalar  rT422 	=	1625.32	;
+
+	scalar  uT123	=	2154.34 ; 
+	scalar  rT123 	=	1651.91 ; 
+	scalar  uT223	=	2176.94 ; 
+	scalar  rT223 	=	1665.47 ; 	
+	scalar  uT323	=	2218.76 ; 
+	scalar  rT323 	=	1697.79 ;
+	scalar  uT423	=	2239.99 ; 
+	scalar  rT423 	=	1716.25	;
+	
+	gen ocupado=cond(clase1==1 & clase2==1,1,0);
+
+	destring p6b2 p6c, replace;
+	recode p6b2 (999998=.) (999999=.);
+
+	*Recuperación de ingresos por rangos de salarios mínimos;
+	gen double ingreso=p6b2;
+	replace ingreso=0 if ocupado==0;
+	replace ingreso=0 if p6b2==. & (p6_9==9 | p6a3==3);
+	replace ingreso=0.5*salario if p6b2==. & p6c==1;
+	replace ingreso=1*salario if p6b2==. & p6c==2;
+	replace ingreso=1.5*salario if p6b2==. & p6c==3;
+	replace ingreso=2.5*salario if p6b2==. & p6c==4;
+	replace ingreso=4*salario if p6b2==. & p6c==5;
+	replace ingreso=7.5*salario if p6b2==. & p6c==6;
+	replace ingreso=10*salario if p6b2==. & p6c==7;
+
+	gen tamh = 1 ; 
+
+	rename fac factor ;
+	gen rururb = cond(t_loc>=1 & t_loc<=3,0,1) ;
+	label define ru 0 "Urbano" 1 "Rural" ;
+	label values rururb ru ;
+	destring ent, replace;
+
+	gen mv=cond(ingreso==. & ocupado==1,1,0);
+	
+	foreach var in tamh ingreso mv ocupado {;
+		rename `var' _`var';
+		bys folioh: egen double `var' = sum(_`var');
+		drop _`var';
+	};
+	
+	*Se elimina a los hogares que tienen valores perdidos en ingreso;
+	replace mv=1 if mv>0 & mv!=.;
+	*drop if mv==1;	
+	
+	gen _quarter = substr(wave,2,1);
+	destring _quarter, replace;
+	sum _quarter;
+		local q = r(mean);
+	drop _quarter;
+	sum year;
+		local yy = r(mean);
+		local y = substr("`yy'",3,2);
+	local x = `q'`y';
+	noi di "local x = `x'";
+	
+	gen lpT`x' = cond(rururb==0,uT`x',rT`x') ;
+	gen pob = cond((ingreso/tamh)<lpT`x',1,0) ;	
+	
+	replace pob = . if mv==1;
+	drop rururb ocupado;
+	rename lpT`x' lpT;
+
+	label var tamh 		"Household size for per capita consumption, CONEVAL";
+	label var ingreso 	"Income monthly LCU, adding p6c minimum wage brackets, CONEVAL";
+	label var mv 		"Household with missing incomes excluded from poverty calculation, CONEVAL";
+	label var lpT		"Income poverty line, CONEVAL";
+	label var pob		"Poor by income, CONEVAL";
+	
+	#delimit cr
+
+*</_povertyincome_>
 
 *----------8.13: Labour cleanup------------------------------*
 
@@ -2155,7 +2359,7 @@ quietly{
 		}
 	}
 	
-	local includevars "emp_ppal tue_ppal mh_fil2 mh_col"
+	local includevars "tamh ingreso mv lpT pob cd_a ent mun loc  con v_sel tipo mes_cal ca n_hog h_mud n_ren emp_ppal tue_ppal mh_fil2 mh_col clase2 r_def c_res zona emp_ppal tue_ppal dur_est p6b2 p6c"
 	foreach var of local includevars  {
 		capture confirm variable `var'
 		if _rc {
@@ -2213,13 +2417,6 @@ quietly{
 }
 
 
-*<_% COMPRESS_>
-
-compress
-
-*</_% COMPRESS_>
-
-
 *<_% DELETE MISSING VARIABLES_>
 
 quietly: describe, varlist
@@ -2232,6 +2429,12 @@ if !_rc drop `var'
 
 *</_% DELETE MISSING VARIABLES_>
 
+
+*<_% COMPRESS_>
+
+compress
+
+*</_% COMPRESS_>
 
 
 *<_% SAVE_>

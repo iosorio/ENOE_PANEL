@@ -65,7 +65,7 @@ set more off
 
 * Define path sections
 if c(os)=="Windows" local server "C:/Users/WB308767/OneDrive/Data/GLD"
-if c(os)=="MacOSX"|c(os)=="Unix"  local server "/Users/Israel/OneDrive/IOR/Projects/Y2025/FY25_MEX_MinimumWage/Mexico_MinWage/ENOE"
+if c(os)=="MacOSX"|c(os)=="Unix"  local server "/Users/Israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL"
 local country "MEX"
 local year    "2025"
 local survey  "ENOE"
@@ -94,9 +94,9 @@ local q  = substr("`quarter'",2,1);
 local yy = substr("`year'",3,2);
 local x = `q'`yy';
 noi di "x: `x'";
-local use_enoen_ext = inlist(`x',320,420,121,221)
-local use_enoen     = inlist(`x',321,421,122,222,322,422)
-local use_enoe      = inlist(`x',123,223,323,423,124,224,324,424,125,225,325)
+local use_enoen_ext = inlist(`x',320,420,121,221);
+local use_enoen     = inlist(`x',321,421,122,222,322,422);
+local use_enoe      = inlist(`x',123,223,323,423,124,224,324,424,125,225,325);
 cd "`path_in_stata'";
 
 * COE1;
