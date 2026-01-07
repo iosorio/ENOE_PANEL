@@ -8,7 +8,7 @@ clear
 *******************************************************************************/
 
 	* Create a balance database
-	use pid_p n_ent q_panel tipo if q_panel==1 using "$path/PANEL/DATA/MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta", clear
+	use pid_p n_ent q_panel tipo if q_panel==1 using "$path/PANEL/DATA/MEX_2005_2025_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta", clear
 		tab tipo, m
 		drop tipo
 		duplicates report 

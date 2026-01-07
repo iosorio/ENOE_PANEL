@@ -673,7 +673,7 @@ erase "`path_output'/baseCOE2T`x'.dta";
 	label var isic_version "Version of ISIC used
 
 *<_year_>
-	gen int year = 2023
+	gen int year = 2025
 	label var year "Year of survey"
 *</_year_>
 
@@ -697,7 +697,7 @@ erase "`path_output'/baseCOE2T`x'.dta";
 
 
 *<_int_year_>
-	gen int_year=2023
+	gen int_year=2025
 	label var int_year "Year of the interview"
 *</_int_year_>
 
@@ -2477,6 +2477,14 @@ replace industrycat10_2_helper=. if lstatus!=1
 	scalar  rT324   =	1797.26 ;
 	scalar  uT424   =	2357.49 ;
 	scalar  rT424   =	1796.86 ;
+
+	scalar  uT125   =   	2369.94 ;
+	scalar  rT125   =   	1793.54 ;
+	scalar  uT225   =   	2423.77 ;
+	scalar  rT225   =   	1836.75 ;
+	scalar  uT325   =   	2453.38 ;
+	scalar  rT325   =   	1852.76 ;
+
 
 	
 	gen ocupado=cond(clase1==1 & clase2==1,1,0);

@@ -2265,6 +2265,14 @@ replace firmsize_u_2 = 1 if empstat_2 == 4
 	scalar  uT424   =	2357.49 ;
 	scalar  rT424   =	1796.86 ;
 
+	scalar  uT125   =   	2369.94 ;
+	scalar  rT125   =   	1793.54 ;
+	scalar  uT225   =   	2423.77 ;
+	scalar  rT225   =   	1836.75 ;
+	scalar  uT325   =   	2453.38 ;
+	scalar  rT325   =   	1852.76 ;
+
+
 	
 	gen ocupado=cond(clase1==1 & clase2==1,1,0);
 
