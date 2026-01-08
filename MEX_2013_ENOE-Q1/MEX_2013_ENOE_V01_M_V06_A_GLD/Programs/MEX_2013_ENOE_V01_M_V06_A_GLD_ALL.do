@@ -20,7 +20,7 @@
 <_Data collection to_>			[05/2013] </_Data collection to_>
 <_Source of dataset_> 			[Mexico NSO] </_Source of dataset_>
 <_Sample size (HH)_> 			[103,658] </_Sample size (HH)_>
-<_Sample size (IND)_> 			[385,658] </_Sample size (IND)_>
+<_Sample size (IND)_> 			[385,792] </_Sample size (IND)_>
 <_Sampling method_> 			[ El tipo de muestreo utilizado es probabilístico, bietápico, estratificado y por conglomerados.] </_Sampling method_>
 <_Geographic coverage_> 		[Los niveles geograficos usados en la encuesta de México comienzan en estados siguen con ciudades autorrepresentadas y terminan con municipios de las ciudades autorrepresentadas. https://www.inegi.org.mx/contenidos/productos/prod_serv/contenidos/espanol/bvinegi/productos/metodologias/est/cobertura.pdf] </_Geographic coverage_>
 <_Currency_> 					[Pesos] </_Currency_>
