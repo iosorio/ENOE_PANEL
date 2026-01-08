@@ -50,6 +50,13 @@ About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuest
 - Scripts assume lowercase variable names after `rename *, lower;`.
 - Keep the directory structure intact (GLD format) for relative paths to resolve.
 
+## Harmonization consistency review (2026-01-08)
+- Reviewed 82 `MEX_*_ENOE_V01_M_V06_A_GLD_ALL.do` files for metadata consistency.
+- Core metadata are consistent: `countrycode=MEX`, `survname=ENOE`, `survey=LFS`, `isco_version=isco_2008`, `isic_version=isic_4`, `harmonization=GLD`.
+- `year` and `int_year` match the `local year` macro in each file; `wave` matches the quarter in the folder name.
+- Expected version shifts are present: `icls_v` is `ICLS-13` (2005-2012) then `ICLS-18` (2013-2025); `isced_version` is `isced_1997` (2005-2011) then `isced_2011` (2012-2025).
+- Fixes applied: 2024/2025 `year` and `int_year` were corrected from 2023, and 2024/2025 Q1-Q3 `wave` values were corrected from Q4.
+
 ## Contributing
 - Keep edits ASCII-only unless the file already contains accents/Unicode.
 - Follow existing naming/path conventions.

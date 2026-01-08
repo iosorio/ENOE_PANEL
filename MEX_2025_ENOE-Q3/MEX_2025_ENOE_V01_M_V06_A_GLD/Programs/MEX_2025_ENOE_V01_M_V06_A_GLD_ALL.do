@@ -758,7 +758,7 @@ erase "`path_output'/baseCOE2T`x'.dta";
 
 
 *<_wave_>
-	gen wave = "Q4"
+	gen wave = "Q3"
 	label var wave "Survey wave"
 *</_wave_>
 
