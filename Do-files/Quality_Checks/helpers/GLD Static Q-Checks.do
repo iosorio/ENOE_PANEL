@@ -57,7 +57,7 @@ if _rc == 0 { // if isic version info exists, otherwise cannot know which ISIC v
 	* Preserve harmonization file to read in ISIC universe, save
 	preserve
 
-	import delimited "https://raw.githubusercontent.com/worldbank/gld/main/Support/D%20-%20Q%20Checks/Helper%20Programs/isic_codes.txt", delimiter(comma) varnames(1) clear 
+	import delimited "${path_to_helpers}/isic_codes.txt", delimiter(comma) varnames(1) clear 
 
 	* Reduce to only cases of said version
 	keep if version == "`isic_version'"
@@ -82,7 +82,7 @@ if _rc == 0 { // if isic version info exists, otherwise cannot know which ISIC v
 	* Preserve harmonization file to read in ISIC universe, save
 	preserve
 
-	import delimited "https://raw.githubusercontent.com/worldbank/gld/main/Support/D%20-%20Q%20Checks/Helper%20Programs/isco_codes.txt", delimiter(comma) varnames(1) clear 
+	import delimited "${path_to_helpers}/isco_codes.txt", delimiter(comma) varnames(1) clear 
 	
 	* Reduce to only cases of said version
 	keep if version == "`isco_version'"
@@ -1153,5 +1153,4 @@ if `wdiworks' == 1{
 postclose `memhold'
 
 /* End of do-file */
-
 

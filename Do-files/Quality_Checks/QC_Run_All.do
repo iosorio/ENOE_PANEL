@@ -67,12 +67,15 @@ if _rc != 0 {
 	exit
 }
 
+cap mkdir "${qc_output_diryear}"
+cap mkdir "${path_to_output_folder}"
 confirmdir "${path_to_output_folder}"
 if `r(confirmdir)' != 0 {
 	display as error "Folder of path_to_output_folder cannot be found"
 	exit
 }
 
+cap mkdir "${path_to_helpers}"
 confirmdir "${path_to_helpers}"
 if `r(confirmdir)' != 0 {
 	display as error "Folder of path_to_helpers cannot be found"
@@ -95,7 +98,7 @@ local output_excel_filename = "${path_to_output_folder}/${survey_id}_Q-Checks.xl
 foreach filename of local output_dta_files {
 	local filename_full_path = "${path_to_output_folder}/`filename'"
 	local position_helpr = strpos("`filename'", "q_checks_")
-	local sheet_name = regexr(substr("`filename'", `position_helpr' + 9, .), ".dta", "")
+	local sheet_name = regexr(substr("`filename'", `position_helpr' + 44, .), ".dta", "")
 
 	use "`filename_full_path'", clear
 	export excel using "`output_excel_filename'", sheet("`sheet_name'") replace
