@@ -1,1 +1,0 @@
-The Mexican ENOE surveys are in the public domain. Please check the INEGI website.
