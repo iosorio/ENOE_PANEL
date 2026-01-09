@@ -50,7 +50,7 @@ About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuest
 - Scripts assume lowercase variable names after `rename *, lower;`.
 - Keep the directory structure intact (GLD format) for relative paths to resolve.
 - `sample_size_audit.csv` records HH/IND sample sizes computed from raw SDEMT inputs (HH = distinct `folioh`, IND = row count after `r_def==0` and `c_res in {1,3}`); updated 2026-01-08.
-- `scripts/sample_size_audit.py` recomputes those sample sizes from raw SDEMT and can update the tags: `python scripts/sample_size_audit.py --update`.
+- `Do-files/sample_size_audit/sample_size_audit.py` recomputes those sample sizes from raw SDEMT and can update the tags: `python Do-files/sample_size_audit/sample_size_audit.py --update`.
 
 ## Harmonization consistency review (2026-01-08)
 - Reviewed 82 `MEX_*_ENOE_V01_M_V06_A_GLD_ALL.do` files for metadata consistency.

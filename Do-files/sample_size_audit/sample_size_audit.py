@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
 """
+# Sample Size Audit
+
 Audit HH/IND sample sizes for ENOE GLD do-files.
 
 This script reads the raw ENOE SDEMT Stata files for each quarter and:
-  - counts IND as the number of person records after filtering
-    r_def == 0 and c_res in {1,3};
-  - counts HH as the number of distinct household IDs (folioh) built
-    from raw SDEMT components (with year-specific variants handled).
+- counts IND as the number of person records after filtering
+  `r_def == 0` and `c_res in {1,3}`;
+- counts HH as the number of distinct household IDs (`folioh`) built
+  from raw SDEMT components (with year-specific variants handled).
 
 It then writes a CSV report with the current sample sizes found in
-each .do file and the recomputed counts. With --update, it replaces
-the values in the <_Sample size (HH)_> and <_Sample size (IND)_> tags.
+each `.do` file and the recomputed counts. With `--update`, it replaces
+the values in the `<_Sample size (HH)_>` and `<_Sample size (IND)_>` tags.
 
-Usage examples:
-  python scripts/sample_size_audit.py
-  python scripts/sample_size_audit.py --update
-  python scripts/sample_size_audit.py --report sample_size_audit.csv
+## Usage
+
+```bash
+python Do-files/sample_size_audit/sample_size_audit.py
+python Do-files/sample_size_audit/sample_size_audit.py --update
+python Do-files/sample_size_audit/sample_size_audit.py --report sample_size_audit.csv
+```
+
+## Performance Notes
+
+Parallel setup is implemented in `01_ENOE_Harmonization.do`.
+- Parallel run time: 12 minutes 58 seconds.
+- Parallelization: 21 batch files (one per year).
+- Hardware: 56-core Mac with 192 GB RAM.
+- Sequential run time: approximately 2 hours 20 minutes.
 """
 import argparse
 from pathlib import Path

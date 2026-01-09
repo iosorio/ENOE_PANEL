@@ -3,3 +3,7 @@
 *.log
 *.stswp
 batch_*.do
+*.DS_Store
+Do-files/.DS_Store
+MEX_2005_ENOE-Q1/.DS_Store
+MEX_2005_ENOE-Q1/MEX_2005_ENOE_V01_M_V06_A_GLD/.DS_Store
