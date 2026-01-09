@@ -20,6 +20,46 @@ This index lists consolidated ENOE documentation (questionnaires, crosswalks, an
 - `common/c_amp_v4-13-15.pdf` - ENOE questionnaire annex (ampliado) for 2013–2015.
 - `common/tablas_comparativas.xlsx` - Comparative classification tables across coding versions.
 
+## By year-quarter
+**2017-Q2**
+- `by-year-quarter/2017-Q2/nota_bases_datos_enoe_2017_2t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2017-Q3**
+- `by-year-quarter/2017-Q3/nota_bases_datos_enoe_2017_3t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2017-Q4**
+- `by-year-quarter/2017-Q4/nota_bases_datos_enoe_2017_4t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2018-Q2**
+- `by-year-quarter/2018-Q2/nota_bases_datos_enoe_2018_2t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2018-Q3**
+- `by-year-quarter/2018-Q3/nota_bases_datos_enoe_2018_3t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2018-Q4**
+- `by-year-quarter/2018-Q4/nota_bases_datos_enoe_2018_4t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2019-Q2**
+- `by-year-quarter/2019-Q2/nota_bases_datos_enoe_2019_2t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2019-Q3**
+- `by-year-quarter/2019-Q3/nota_bases_datos_enoe_2019_3t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2019-Q4**
+- `by-year-quarter/2019-Q4/nota_bases_datos_enoe_2019_4t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2023-Q1**
+- `by-year-quarter/2023-Q1/nota_bases_datos_enoe_2023_1t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2023-Q4**
+- `by-year-quarter/2023-Q4/nota_bases_datos_enoe_2023_4t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2024-Q3**
+- `by-year-quarter/2024-Q3/nota_bases_datos_enoe_2024_3t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
+**2024-Q4**
+- `by-year-quarter/2024-Q4/nota_bases_datos_enoe_2024_4t.txt` - INEGI release notes for ENOE data (quarter-specific).
+
 ## By year
 **2005**
 - `by-year/2005/readme_2005.txt` - Year-specific survey documentation and sourcing notes.
