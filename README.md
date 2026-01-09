@@ -8,11 +8,11 @@ About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuest
   - `01_ENOE_Harmonization.do` executes GLD harmonization for each quarter.
   - `02_Append_ENOE_Surveys.do` appends all harmonized quarters, builds panel IDs/flags.
   - `03_Construct_panel_of_workers.do` builds the balanced rotating panel.
-  - `04_Figure_08.do`, `05_Annex_Table_6.do`, `06_Annex_Table_8.do` export outputs to Excel.
+  - (Exports to Excel are not part of the current pipeline.)
   - Label helpers: `ent_mun_label.do`, `lblc_mnpio.do`.
 - `MEX_YYYY_ENOE-QX/` — per-quarter folders with GLD Programs/Data.
 - `PANEL/` — derived data (`PANEL/DATA/*.dta`) and auxiliary scripts.
-- `Output/` — Excel outputs for figures/tables.
+- `Output/` — legacy outputs (if present).
 - `Doc/Technical Documents/` — consolidated technical documents (see `Doc/Technical Documents/INDEX.md`).
 
 ## Prerequisites
@@ -44,7 +44,7 @@ About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuest
 - Harmonized quarterly microdata per survey in `.../Data/Harmonized/`.
 - Appended full sample: `PANEL/DATA/MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`.
 - Balanced panel: `PANEL/DATA/MEX_2005_2023_PANEL_QUARTER.dta`.
-- Excel outputs: `Output/FINAL figures for MEX PEA.xlsx` and `Output/FINAL tables for MEX PEA.xlsx`.
+- Excel outputs are not produced by the current pipeline.
 
 ## Logging and reproducibility
 - Each step writes a log to `Do-files/Logs/`.
