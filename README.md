@@ -1,4 +1,4 @@
-# ENOE_PANEL
+# ENOE_PANEL : Mexico ENOE (Encuesta Nacional de Ocupación y Empleo) Harmonization and Panel Construction.
 
 About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacional de Ocupación y Empleo) using the World Bank GLD template. The codebase spans 2005.Q1–2025.Q3 and generates harmonized quarterly microdata, a rotating worker panel, and tabulations/figures for analysis.
 
