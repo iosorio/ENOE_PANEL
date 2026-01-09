@@ -8,20 +8,22 @@ if c(username)=="israel"|c(username)=="Israel" {
 }
 
 cd "$path"
+global thedo "$path/Do-files"
+cap mkdir "$thedo/batch"
 clear
 
 *===========================================================================
 * Parallel set-up
 *===========================================================================
 
-local parallelfile "01_ENOE_Harmonization.do"
+local parallelfile "$thedo/01_ENOE_Harmonization.do"
 
 * If local parallel (below) is set to "yes". Then n batch files are created
 * with the name batch_`i'.do located in the working directory.
 * The iniyear and finyear locals above are replaced with those in line 91 and 92
 * To run: copy and past the routine lines above in terminal or command prompt.
 
-local parallel 	""
+local parallel 	"yes"
 		local iniparallelyear = 2005	// First batch file to be created
 		local finparallelyear = 2025	// Last batch file to be created
 		scalar xrxx = 1			// Do not modify
@@ -31,7 +33,7 @@ local parallel 	""
 
 	
 	if "`parallel'"=="yes" & "`c(os)'"=="MacOSX" {
-		cd "$thedo"
+		cd "$thedo/batch"
 		
 		* Create myscript.sh
 		cap erase myscript.sh
@@ -55,13 +57,13 @@ local parallel 	""
 		* Close file
 		file close myscript
 		!chmod +x myscript.sh
-		!./myscript.sh
+		*!./myscript.sh
 		etime
 		exit
 	}
 
 	if "`parallel'"=="yes" & "`c(os)'"=="Windows" {
-		cd "$thedo"
+		cd "$thedo/batch"
 		
 		* Create myscript.sh
 		cap erase myscript.bat
@@ -72,7 +74,7 @@ local parallel 	""
 			
 			
 			* Copy batch file
-			!copy "00_master.do" "batch_`bi'.do"
+			!copy "`parallelfile'" "batch_`bi'.do"
 			* Replace _fake xrxx and xryy with initial and final years
 			!powershell -command " (Get-Content batch_`bi'.do) -replace '_fakeiniyear=xrxx', 'iniyear=`bi'' | Out-File -encoding ASCII batch_`bi'.do "
 			!powershell -command " (Get-Content batch_`bi'.do) -replace '_fakefinyear=xrxy', 'finyear=`bi'' | Out-File -encoding ASCII batch_`bi'.do "
