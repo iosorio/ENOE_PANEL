@@ -48,6 +48,24 @@ This index lists consolidated ENOE documentation (questionnaires, crosswalks, an
 **2019-Q4**
 - `by-year-quarter/2019-Q4/nota_bases_datos_enoe_2019_4t.txt` - INEGI release notes for ENOE data (quarter-specific).
 
+**2020-Q3**
+- `by-year-quarter/2020-Q3/nota_bases_datos_enoen_2020_3t.txt` - INEGI release notes for ENOEN data (quarter-specific).
+
+**2020-Q4**
+- `by-year-quarter/2020-Q4/nota_bases_datos_enoen_2020_4t.txt` - INEGI release notes for ENOEN data (quarter-specific).
+
+**2021-Q1**
+- `by-year-quarter/2021-Q1/nota_bases_datos_enoen_2021_1t.txt` - INEGI release notes for ENOEN data (quarter-specific).
+
+**2021-Q3**
+- `by-year-quarter/2021-Q3/nota_bases_datos_enoen_2021_3t.txt` - INEGI release notes for ENOEN data (quarter-specific).
+
+**2021-Q4**
+- `by-year-quarter/2021-Q4/nota_bases_datos_enoen_2021_4t.txt` - INEGI release notes for ENOEN data (quarter-specific).
+
+**2022-Q1**
+- `by-year-quarter/2022-Q1/nota_bases_datos_enoen_2022_1t.txt` - INEGI release notes for ENOEN data (quarter-specific).
+
 **2023-Q1**
 - `by-year-quarter/2023-Q1/nota_bases_datos_enoe_2023_1t.txt` - INEGI release notes for ENOE data (quarter-specific).
 
@@ -111,6 +129,7 @@ This index lists consolidated ENOE documentation (questionnaires, crosswalks, an
 
 **2019**
 - `by-year/2019/readme_2019.txt` - Year-specific survey documentation and sourcing notes.
+- `by-year/2019/readme_2019_doc.txt` - 2019 documentation from the quarter package (Data/Doc readme).
 
 **2020**
 - `by-year/2020/readme_2020.txt` - Year-specific survey documentation and sourcing notes.
