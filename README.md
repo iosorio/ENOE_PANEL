@@ -13,8 +13,7 @@ About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuest
 - `MEX_YYYY_ENOE-QX/` — per-quarter folders with GLD Programs/Data.
 - `PANEL/` — derived data (`PANEL/DATA/*.dta`) and auxiliary scripts.
 - `Output/` — legacy outputs (if present).
-- `Doc/Technical Documents/` — consolidated technical documents (see `Doc/Technical Documents/INDEX.md`).
-- `Doc/Master_Doc/` — consolidated documentation from `MEX_*_ENOE_V01_M/Doc` (see `Doc/Master_Doc/INDEX.md`).
+- `Doc/Documentation/` — consolidated documentation (Master_Doc + Technical Documents), indexed at `Doc/Documentation/INDEX.md`.
 
 ## Prerequisites
 - Stata 16 or newer (tested with Stata MP).
