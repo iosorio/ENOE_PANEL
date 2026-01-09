@@ -15,16 +15,13 @@
 		global path "/Users/`c(username)'/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL"
 	}
 
-* User 2: Israel Osorio Rodarte (WB308767)
-	if c(username)=="WB308767" & c(hostname)=="WBGXDP0663" {
-		global path "C:/Users/`c(username)'/OneDrive/IOR/Projects/Y2025/FY25_MEX_MinimumWage/Mexico_MinWage/ENOE"
-	}	
-
 cd "$path"
+global thedo "$path/Do-files"
 cap log close master
 cap mkdir "$path/Logs"
 log using "Do-Files/Logs/Master.log", replace name(master)
 clear
+etime, start
 ********************************************************************************
 * STEPS
 ********************************************************************************
