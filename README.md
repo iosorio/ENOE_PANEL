@@ -27,6 +27,8 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 - `Doc/Source_Packages/` — canonical crosswalk scripts (`programs/`) and index at `Doc/Source_Packages/INDEX.md`. Set `ENOE_DOCS` to the folder containing `SCIAN_18_ISIC_4.xlsx`, `SCIAN_07_ISIC_4.xlsx`, and `tablas_comparativas.xlsx` before running those scripts.
 - `Doc/poverty_lines_inegi/` — poverty line reference file.
 - `Do-files/ent_mun_label.do` — shared geographic label helper now referenced by harmonization scripts.
+- `Do-files/Quality_Checks/` — canonical GLD quality checks and runners (see `Do-files/Quality_Checks/INDEX.md`).
+- `Output/Quality_Checks/` — generated quality-check outputs by year/quarter.
 
 ## Prerequisites
 - Stata 16 or newer (tested with Stata MP).

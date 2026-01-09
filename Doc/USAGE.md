@@ -43,13 +43,19 @@ Canonical crosswalk scripts live in `Doc/Source_Packages/programs/`. Set `ENOE_D
 ## 6) Shared Stata helpers
 - `Do-files/ent_mun_label.do` is now the shared helper for subnational labels. Harmonization scripts set `path_in_do` to `\`server'/Do-files`.
 
-## 7) Outputs
+## 7) Quality checks
+- Canonical GLD Q-checks live in `Do-files/Quality_Checks/`.
+- Sequential runner: `Do-files/Quality_Checks/00_Run_All_Sequential.do`
+- Parallel runner (optional): `Do-files/Quality_Checks/00_Run_All_Parallel.do`
+- Outputs are written to `Output/Quality_Checks/by-year/YYYY/QX/`.
+
+## 8) Outputs
 - Harmonized quarterly `.dta` in each quarter’s `Data/Harmonized/`.
 - Appended full sample: `PANEL/DATA/MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`.
 - Balanced panel: `PANEL/DATA/MEX_2005_2023_PANEL_QUARTER.dta`.
 - Excel outputs are not produced by the current pipeline.
 
-## 8) Troubleshooting
+## 9) Troubleshooting
 - Missing variable errors (e.g., `p5b_thrs`, `p5f1`, `ent`): add `cap confirm var` branches and normalize names early.
 - Path errors: confirm `$path` in `00 Master.do` and folder layout.
 - 2020.Q2 absence: expected; the pipeline skips counter 62.
