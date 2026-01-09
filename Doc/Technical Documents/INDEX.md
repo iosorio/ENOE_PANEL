@@ -91,3 +91,6 @@ This index lists consolidated technical documents and their scope.
 - TXT
   - `by-quarter/2009-Q1/readme.txt` - Quarter/year-specific technical notes and data handling guidance.
 
+## Other Documentation
+
+- `Doc/poverty_lines_inegi/Líneas_de_Pobreza_por_Ingresos_mar2025.xlsx` - INEGI poverty lines by income (March 2025).
