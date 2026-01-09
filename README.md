@@ -26,6 +26,7 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 - `Doc/Documentation/` — consolidated reference documentation, indexed at `Doc/Documentation/INDEX.md`.
 - `Doc/Source_Packages/` — canonical crosswalk scripts (`programs/`) and index at `Doc/Source_Packages/INDEX.md`. Set `ENOE_DOCS` to the folder containing `SCIAN_18_ISIC_4.xlsx`, `SCIAN_07_ISIC_4.xlsx`, and `tablas_comparativas.xlsx` before running those scripts.
 - `Doc/poverty_lines_inegi/` — poverty line reference file.
+- `Do-files/ent_mun_label.do` — shared geographic label helper now referenced by harmonization scripts.
 
 ## Prerequisites
 - Stata 16 or newer (tested with Stata MP).
@@ -66,6 +67,7 @@ Outputs
 - Each step writes a log to `Do-files/Logs/`.
 - Scripts assume lowercase variable names after `rename *, lower;`.
 - Keep the directory structure intact (GLD format) for relative paths to resolve.
+- Harmonization scripts now set `path_in_do` to `\`server'/Do-files` for `ent_mun_label.do`.
 - `sample_size_audit.csv` records HH/IND sample sizes computed from raw SDEMT inputs (HH = distinct `folioh`, IND = row count after `r_def==0` and `c_res in {1,3}`); updated 2026-01-08.
 - `Do-files/sample_size_audit/sample_size_audit.py` recomputes those sample sizes from raw SDEMT and can update the tags: `python Do-files/sample_size_audit/sample_size_audit.py --update`.
 

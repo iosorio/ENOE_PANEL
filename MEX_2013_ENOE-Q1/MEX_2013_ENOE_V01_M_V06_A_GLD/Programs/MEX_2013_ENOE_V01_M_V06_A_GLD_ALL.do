@@ -81,7 +81,7 @@ local quarter "Q1"
 	local level_2_harm "`level_1'_`vermast'_M_`veralt'_A_GLD"
 
 	* From chunks, define path_in, path_output folder
-	local path_in_do 	"`server'/`level_1'-`quarter'/`level_2_harm'/Programs"
+	local path_in_do 	"`server'/Do-files"
 
 local path_in_stata "`server'/`level_1'-`quarter'/`level_2_mast'/Data/Stata"
 	local path_in_other "`server'/`level_1'-`quarter'/`level_2_mast'/Data/Original"
