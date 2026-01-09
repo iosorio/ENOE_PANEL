@@ -1,19 +1,31 @@
-# ENOE_PANEL : Mexico ENOE (Encuesta Nacional de Ocupación y Empleo) Harmonization and Panel Construction.
+# ENOE_PANEL: Mexico ENOE Harmonization and Panel Construction
 
-About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacional de Ocupación y Empleo) using the [World Bank Global Labor Database](url:https://github.com/worldbank/gld) template. The codebase spans 2005.Q1–2025.Q3 and generates harmonized quarterly microdata, a rotating worker panel, and tabulations/figures for analysis.
+Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacional de Ocupacion y Empleo) using the [World Bank Global Labor Database](https://github.com/worldbank/gld) template. The codebase spans 2005.Q1–2025.Q3 and generates harmonized quarterly microdata plus a rotating worker panel.
+
+## Contents
+- [Repository layout](#repository-layout)
+- [Prerequisites](#prerequisites)
+- [Quick start](#quick-start)
+- [Optional parallel run](#optional-parallel-run)
+- [Inputs and outputs](#inputs-and-outputs)
+- [Instrument differences to be aware of](#instrument-differences-to-be-aware-of)
+- [Logging and reproducibility](#logging-and-reproducibility)
+- [Harmonization consistency review (2026-01-08)](#harmonization-consistency-review-2026-01-08)
+- [Contributing](#contributing)
 
 ## Repository layout
-- `Do-files/` — main pipeline in Stata:
+- `Do-files/` — main Stata pipeline:
   - `00 Master.do` orchestrates the full run.
   - `01_ENOE_Harmonization.do` executes GLD harmonization for each quarter.
   - `02_Append_ENOE_Surveys.do` appends all harmonized quarters, builds panel IDs/flags.
   - `03_Construct_panel_of_workers.do` builds the balanced rotating panel.
-  - (Exports to Excel are not part of the current pipeline.)
   - Label helpers: `ent_mun_label.do`, `lblc_mnpio.do`.
 - `MEX_YYYY_ENOE-QX/` — per-quarter folders with GLD Programs/Data.
 - `PANEL/` — derived data (`PANEL/DATA/*.dta`) and auxiliary scripts.
 - `Output/` — legacy outputs (if present).
-- `Doc/Documentation/` — consolidated documentation (Master_Doc + Technical Documents), indexed at `Doc/Documentation/INDEX.md`.
+- `Doc/Documentation/` — consolidated reference documentation, indexed at `Doc/Documentation/INDEX.md`.
+- `Doc/Source_Packages/` — canonical crosswalk scripts (`programs/`) and index at `Doc/Source_Packages/INDEX.md`. Set `ENOE_DOCS` to the folder containing `SCIAN_18_ISIC_4.xlsx`, `SCIAN_07_ISIC_4.xlsx`, and `tablas_comparativas.xlsx` before running those scripts.
+- `Doc/poverty_lines_inegi/` — poverty line reference file.
 
 ## Prerequisites
 - Stata 16 or newer (tested with Stata MP).
@@ -21,30 +33,34 @@ About: Harmonization and panel construction scripts for Mexico’s ENOE (Encuest
 - Local copies of the ENOE raw/Stata files organized per GLD expectations.
 
 ## Quick start
-1) Clone or open the repository.
-2) Set the base path in `Do-files/00 Master.do` (and in any per-user path logic if needed) to your local ENOE data root. Use forward slashes on macOS/Linux.
-3) Run from Stata: `do "Do-files/00 Master.do"`. This:
-   - Harmonizes each quarter (except 2020.Q2, which is missing).
-   - Appends and constructs panel flags/IDs.
-   - Builds the balanced rotating panel.
-   - Writes outputs to `Output/FINAL ... .xlsx`.
+1) Set the base path in `Do-files/00 Master.do` (and any per-user path logic) to your local ENOE data root. Use forward slashes on macOS/Linux.
+2) Run from Stata: `do "Do-files/00 Master.do"`.
 
-### Parallel option (optional)
+This will:
+- Harmonize each quarter (except 2020.Q2, which is missing).
+- Append and construct panel flags/IDs.
+- Build the balanced rotating panel.
+
+## Optional parallel run
 `PANEL/DO/00_Process_ENOE_quarterly_data.do` and `01_Append_ENOE_quarterly_data.do` include parallel run logic that spawns year-specific batch do-files and executes them via `myscript.sh` (macOS) or `.bat` (Windows). Use only if the path/user blocks match your environment.
+
+## Inputs and outputs
+Inputs
+- Raw ENOE data should be available under each quarter at `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_V01_M/Data/Original` and `.../Data/Stata` following the GLD layout.
+
+Outputs
+- Harmonized quarterly microdata in each quarter’s `Data/Harmonized/`.
+- Appended full sample: `PANEL/DATA/MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`.
+- Balanced panel: `PANEL/DATA/MEX_2005_2023_PANEL_QUARTER.dta`.
+- Excel outputs are not produced by the current pipeline.
 
 ## Instrument differences to be aware of
 - **Working hours**: Older instruments use `p5c_thrs` (fallback `p5e_thrs`); newer ones use `p5b_thrs` (fallback `p5d_thrs`). Defensive logic is present in 2024/2025 scripts.
 - **Months worked**: Older instruments use `p5g*`; newer use `p5f*`. Defensive logic is present in 2024/2025 scripts.
 - **Firm size (primary job)**: Q1 uses `p3q` (older code); Q2–Q4 use `p3l` (newer). 2024/2025 Q1 files have been aligned to `p3q`.
-- **Geographic codes**: Starting 2025.Q3 INEGI renamed `ent` → `cve_ent` (and similarly `mun`/`loc`). 2025.Q3 harmonization normalizes these after `rename *, lower;` so folios/subnat IDs remain consistent.
+- **Geographic codes**: Starting 2025.Q3 INEGI renamed `ent` -> `cve_ent` (and similarly `mun`/`loc`). 2025.Q3 harmonization normalizes these after `rename *, lower;` so folios/subnat IDs remain consistent.
 - **Weights/strata**: Some quarters use `fac_np`/`est_d`, others `fac`/`est_d_tri`. If you see missing-variable errors on weights/strata, mirror the defensive pattern used elsewhere.
 - **Missing quarter**: 2020.Q2 is absent (COVID-19); the pipeline skips counter 62.
-
-## Outputs
-- Harmonized quarterly microdata per survey in `.../Data/Harmonized/`.
-- Appended full sample: `PANEL/DATA/MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`.
-- Balanced panel: `PANEL/DATA/MEX_2005_2023_PANEL_QUARTER.dta`.
-- Excel outputs are not produced by the current pipeline.
 
 ## Logging and reproducibility
 - Each step writes a log to `Do-files/Logs/`.
