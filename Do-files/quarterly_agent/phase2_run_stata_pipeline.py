@@ -18,14 +18,13 @@ from typing import Any
 
 
 LICENSE_ERROR_PATTERNS = (
-    r"license\s+has\s+expired",
-    r"license.*expired",
-    r"your\s+license",
-    r"no\s+license",
-    r"not\s+licensed",
-    r"license\s+file",
-    r"authorization\s+code",
-    r"serial\s+number",
+    r"\blicense\s+has\s+expired\b",
+    r"\blicense\b.{0,80}\bexpired\b",
+    r"\bexpired\s+license\b",
+    r"\bno\s+valid\s+license\b",
+    r"\bnot\s+licensed\b",
+    r"\blicense\s+file\b.{0,80}\b(not\s+found|cannot|could\s+not|invalid|error)\b",
+    r"\bauthorization\s+code\b.{0,80}\b(invalid|expired|incorrect)\b",
 )
 
 
@@ -44,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--repo-root", default=str(default_repo))
     ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--quarter", type=int, choices=[1, 2, 3, 4], required=True)
+    ap.add_argument("--panel-start-year", type=int, default=2005)
     ap.add_argument("--stata-bin", default="stata-mp")
     ap.add_argument("--skip-extract", action="store_true")
     ap.add_argument("--skip-append", action="store_true")
@@ -81,6 +81,36 @@ def harm_output_path(root: Path, year: int) -> Path:
 
 def state_run_dir(repo_root: Path) -> Path:
     return repo_root / "Do-files" / "quarterly_agent" / "state" / "runs"
+
+
+def panel_tag(start_year: int, end_year: int, end_quarter: int) -> str:
+    return f"{start_year}_{end_year}Q{end_quarter}"
+
+
+def fullsample_output_path(repo_root: Path, start_year: int, end_year: int, end_quarter: int) -> Path:
+    tag = panel_tag(start_year, end_year, end_quarter)
+    return repo_root / "PANEL" / "DATA" / f"MEX_{tag}_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
+
+
+def fullsample_latest_alias_path(repo_root: Path) -> Path:
+    return repo_root / "PANEL" / "DATA" / "MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta"
+
+
+def panel_output_path(repo_root: Path, start_year: int, end_year: int, end_quarter: int) -> Path:
+    tag = panel_tag(start_year, end_year, end_quarter)
+    return repo_root / "PANEL" / "DATA" / f"MEX_{tag}_PANEL_QUARTER.dta"
+
+
+def panel_latest_alias_path(repo_root: Path) -> Path:
+    return repo_root / "PANEL" / "DATA" / "MEX_PANEL_QUARTER_latest.dta"
+
+
+def pipeline_globals(start_year: int, end_year: int, end_quarter: int) -> dict[str, str]:
+    return {
+        "panel_start_year": str(start_year),
+        "panel_end_year": str(end_year),
+        "panel_end_quarter": str(end_quarter),
+    }
 
 
 def choose_original_zip(original_dir: Path, year: int, quarter: int) -> Path | None:
@@ -199,6 +229,10 @@ def run_stata_do(stata_bin: str, do_path: Path, timeout_seconds: int, cwd: Path 
         "stdout_tail": proc.stdout[-4000:],
         "stderr_tail": proc.stderr[-4000:],
     }
+    log_path = run_cwd / f"{do_path.stem}.log"
+    result["log_path"] = str(log_path)
+    if log_path.exists():
+        result["log_tail"] = read_text_tail(log_path, 12000)
     diagnostic = classify_stata_issue(result)
     if diagnostic:
         result["diagnostic"] = diagnostic
@@ -206,7 +240,11 @@ def run_stata_do(stata_bin: str, do_path: Path, timeout_seconds: int, cwd: Path 
 
 
 def classify_stata_issue(run_result: dict[str, Any]) -> dict[str, str] | None:
-    text = f"{run_result.get('stdout_tail', '')}\n{run_result.get('stderr_tail', '')}".lower()
+    text = (
+        f"{run_result.get('stdout_tail', '')}\n"
+        f"{run_result.get('stderr_tail', '')}\n"
+        f"{run_result.get('log_tail', '')}"
+    ).lower()
     for pat in LICENSE_ERROR_PATTERNS:
         if re.search(pat, text):
             return {
@@ -223,11 +261,16 @@ def classify_stata_issue(run_result: dict[str, Any]) -> dict[str, str] | None:
     return None
 
 
-def write_wrapper_do(path: Path, repo_root: Path, inner_do_rel: str) -> None:
+def write_wrapper_do(path: Path, repo_root: Path, inner_do_rel: str, extra_globals: dict[str, str] | None = None) -> None:
+    globals_block = ""
+    if extra_globals:
+        for key, value in extra_globals.items():
+            globals_block += f'global {key} "{value}"\n'
     content = (
         "clear\n"
         "set more off\n"
         f'global path "{repo_root.as_posix()}"\n'
+        f"{globals_block}"
         'cd "$path"\n'
         f'do "{inner_do_rel}"\n'
     )
@@ -244,15 +287,12 @@ def write_preflight_do(path: Path) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def ensure_panel_alias(repo_root: Path) -> dict[str, Any]:
-    src = repo_root / "PANEL" / "DATA" / "MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
-    dst = repo_root / "PANEL" / "DATA" / "MEX_2005_2025_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
-    if not src.exists():
-        return {"status": "missing_source", "src": str(src), "dst": str(dst)}
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    existed = dst.exists()
-    shutil.copy2(src, dst)
-    return {"status": "refreshed" if existed else "copied", "src": str(src), "dst": str(dst)}
+def read_text_tail(path: Path, max_chars: int) -> str:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    return text[-max_chars:]
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -276,7 +316,18 @@ def extract_error_from_steps(steps: dict[str, Any]) -> str | None:
 
 def main() -> int:
     args = parse_args()
+    if args.panel_start_year > args.year:
+        print("ERROR: --panel-start-year must be <= --year", file=sys.stderr)
+        return 2
+
     repo_root = Path(args.repo_root).resolve()
+    panel_tag_value = panel_tag(args.panel_start_year, args.year, args.quarter)
+    expected_fullsample = fullsample_output_path(repo_root, args.panel_start_year, args.year, args.quarter)
+    expected_fullsample_latest = fullsample_latest_alias_path(repo_root)
+    expected_panel = panel_output_path(repo_root, args.panel_start_year, args.year, args.quarter)
+    expected_panel_latest = panel_latest_alias_path(repo_root)
+    do_globals = pipeline_globals(args.panel_start_year, args.year, args.quarter)
+
     qroot = quarter_root(repo_root, args.year, args.quarter)
     mdir = master_dir(qroot, args.year)
     hprog = harm_program_path(qroot, args.year)
@@ -300,6 +351,8 @@ def main() -> int:
         "config": {
             "year": args.year,
             "quarter": args.quarter,
+            "panel_start_year": args.panel_start_year,
+            "panel_tag": panel_tag_value,
             "dry_run": args.dry_run,
             "skip_extract": args.skip_extract,
             "skip_append": args.skip_append,
@@ -315,6 +368,10 @@ def main() -> int:
             "stata_dir": str(stata_dir),
             "harm_do": str(hprog),
             "harm_output": str(hout),
+            "fullsample_output": str(expected_fullsample),
+            "fullsample_latest_alias": str(expected_fullsample_latest),
+            "panel_output": str(expected_panel),
+            "panel_latest_alias": str(expected_panel_latest),
         },
         "steps": {},
         "status": "running",
@@ -350,7 +407,7 @@ def main() -> int:
     else:
         write_preflight_do(wrapper_preflight)
         preflight = run_stata_do(args.stata_bin, wrapper_preflight, min(args.timeout_seconds, 120), cwd=repo_root)
-        preflight_ok = preflight["returncode"] == 0 and "ENOE_PIPELINE_STATA_PREFLIGHT_OK" in preflight.get("stdout_tail", "")
+        preflight_ok = preflight["returncode"] == 0 and "diagnostic" not in preflight
         preflight["status"] = "ok" if preflight_ok else "failed"
         summary["steps"]["stata_preflight"] = preflight
         if not preflight_ok:
@@ -411,15 +468,15 @@ def main() -> int:
         summary["steps"]["harmonization"] = {"status": "blocked"}
 
     if not fatal_error and not args.skip_append:
-        write_wrapper_do(wrapper_append, repo_root, "Do-files/02_Append_ENOE_Surveys.do")
+        write_wrapper_do(wrapper_append, repo_root, "Do-files/02_Append_ENOE_Surveys.do", extra_globals=do_globals)
         if args.dry_run:
             summary["steps"]["append"] = {"status": "would_run", "wrapper_do": str(wrapper_append)}
         else:
             try:
                 result = run_stata_do(args.stata_bin, wrapper_append, args.timeout_seconds, cwd=repo_root)
-                fullsample = repo_root / "PANEL" / "DATA" / "MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
-                ok = result["returncode"] == 0 and fullsample.exists()
-                result["fullsample_exists"] = fullsample.exists()
+                ok = result["returncode"] == 0 and expected_fullsample.exists()
+                result["fullsample_exists"] = expected_fullsample.exists()
+                result["fullsample_latest_exists"] = expected_fullsample_latest.exists()
                 result["status"] = "ok" if ok else "failed"
                 summary["steps"]["append"] = result
                 if not ok:
@@ -432,17 +489,15 @@ def main() -> int:
 
     if not fatal_error and not args.skip_panel:
         if args.dry_run:
-            summary["steps"]["panel_alias"] = {"status": "would_ensure_alias"}
-            write_wrapper_do(wrapper_panel, repo_root, "Do-files/03_Construct_panel_of_workers.do")
+            write_wrapper_do(wrapper_panel, repo_root, "Do-files/03_Construct_panel_of_workers.do", extra_globals=do_globals)
             summary["steps"]["panel"] = {"status": "would_run", "wrapper_do": str(wrapper_panel)}
         else:
-            summary["steps"]["panel_alias"] = ensure_panel_alias(repo_root)
-            write_wrapper_do(wrapper_panel, repo_root, "Do-files/03_Construct_panel_of_workers.do")
+            write_wrapper_do(wrapper_panel, repo_root, "Do-files/03_Construct_panel_of_workers.do", extra_globals=do_globals)
             try:
                 result = run_stata_do(args.stata_bin, wrapper_panel, args.timeout_seconds, cwd=repo_root)
-                panel_out = repo_root / "PANEL" / "DATA" / "MEX_2005_2023_PANEL_QUARTER.dta"
-                ok = result["returncode"] == 0 and panel_out.exists()
-                result["panel_output_exists"] = panel_out.exists()
+                ok = result["returncode"] == 0 and expected_panel.exists()
+                result["panel_output_exists"] = expected_panel.exists()
+                result["panel_latest_exists"] = expected_panel_latest.exists()
                 result["status"] = "ok" if ok else "failed"
                 summary["steps"]["panel"] = result
                 if not ok:
