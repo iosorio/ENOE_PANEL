@@ -6,6 +6,7 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 - [Repository layout](#repository-layout)
 - [Prerequisites](#prerequisites)
 - [Quick start](#quick-start)
+- [Quarterly agent automation (phases 1-4)](#quarterly-agent-automation-phases-1-4)
 - [Optional parallel run](#optional-parallel-run)
 - [Inputs and outputs](#inputs-and-outputs)
 - [Instrument differences to be aware of](#instrument-differences-to-be-aware-of)
@@ -20,6 +21,13 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
   - `02_Append_ENOE_Surveys.do` appends all harmonized quarters, builds panel IDs/flags.
   - `03_Construct_panel_of_workers.do` builds the balanced rotating panel.
   - Label helpers: `ent_mun_label.do`, `lblc_mnpio.do`.
+- `Do-files/quarterly_agent/` — quarterly automation scripts:
+  - `phase1_detect_download.py` detects/releases and downloads ENOE ZIPs.
+  - `phase2_scaffold_quarter.py` scaffolds new quarter folders from prior templates.
+  - `phase2_run_stata_pipeline.py` runs extract/harmonize/append/panel (+ optional QC).
+  - `phase4_schema_diff.py` compares prior-vs-target quarter schema to flag changes.
+  - `run_quarterly_agent.py` orchestrates the end-to-end run.
+  - `state/` stores JSON run manifests for reproducibility and diagnostics.
 - `MEX_YYYY_ENOE-QX/` — per-quarter folders with GLD Programs/Data.
 - `PANEL/` — derived data (`PANEL/DATA/*.dta`) and auxiliary scripts.
 - `Output/` — legacy outputs (if present).
@@ -44,6 +52,25 @@ This will:
 - Append and construct panel flags/IDs.
 - Build the balanced rotating panel.
 
+## Quarterly agent automation (phases 1-4)
+Run from repository root:
+
+```bash
+python3 Do-files/quarterly_agent/run_quarterly_agent.py \
+  --years 2025 \
+  --target-year 2025 \
+  --target-quarter 3 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp \
+  --always-run-pipeline
+```
+
+Useful flags:
+- `--dry-run` validates orchestration without changing data outputs.
+- `--run-qc` executes QC after panel construction.
+- `--fail-on-schema-breaking` stops the run on breaking schema changes.
+- `--skip-scaffold-if-exists` avoids recreating quarter folders.
+
 ## Optional parallel run
 `PANEL/DO/00_Process_ENOE_quarterly_data.do` and `01_Append_ENOE_quarterly_data.do` include parallel run logic that spawns year-specific batch do-files and executes them via `myscript.sh` (macOS) or `.bat` (Windows). Use only if the path/user blocks match your environment.
 
@@ -53,8 +80,11 @@ Inputs
 
 Outputs
 - Harmonized quarterly microdata in each quarter’s `Data/Harmonized/`.
-- Appended full sample: `PANEL/DATA/MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`.
-- Balanced panel: `PANEL/DATA/MEX_2005_2023_PANEL_QUARTER.dta`.
+- Appended full sample (dynamic): `PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`.
+- Balanced panel (dynamic): `PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_PANEL_QUARTER.dta`.
+- Stable aliases for latest run:
+  - `PANEL/DATA/MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta`
+  - `PANEL/DATA/MEX_PANEL_QUARTER_latest.dta`
 - Excel outputs are not produced by the current pipeline.
 
 ## Instrument differences to be aware of
@@ -67,6 +97,10 @@ Outputs
 
 ## Logging and reproducibility
 - Each step writes a log to `Do-files/Logs/`.
+- Quarterly agent run manifests are stored under `Do-files/quarterly_agent/state/`:
+  - `state/agent_runs/agent_run_<timestamp>.json`
+  - `state/runs/phase2_run_<year>Q<quarter>_<timestamp>.json`
+  - `state/schema/phase4_schema_<year>Q<quarter>_<timestamp>.json`
 - Scripts assume lowercase variable names after `rename *, lower;`.
 - Keep the directory structure intact (GLD format) for relative paths to resolve.
 - Harmonization scripts now set `path_in_do` to `\`server'/Do-files` for `ent_mun_label.do`.
