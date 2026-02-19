@@ -40,6 +40,28 @@ clear
 	
 	frame change default
 	cap frame drop frameglobal
+
+	local panel_start_year = 2005
+	if "$panel_start_year" != "" local panel_start_year = real("$panel_start_year")
+
+	local panel_end_year = `panel_start_year'
+	if "$panel_end_year" != "" local panel_end_year = real("$panel_end_year")
+
+	local panel_end_quarter = 4
+	if "$panel_end_quarter" != "" local panel_end_quarter = real("$panel_end_quarter")
+
+	if `panel_end_quarter' < 1 | `panel_end_quarter' > 4 {
+		di as error "panel_end_quarter must be in 1..4"
+		exit 198
+	}
+	if `panel_end_year' < `panel_start_year' {
+		di as error "panel_end_year must be >= panel_start_year"
+		exit 198
+	}
+
+	local panel_tag "`panel_start_year'_`panel_end_year'Q`panel_end_quarter'"
+	local fullsample_file "$path/PANEL/DATA/MEX_`panel_tag'_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
+	local fullsample_latest "$path/PANEL/DATA/MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta"
 	
 	#delimit ;
 	local myvars "weight strata int_month int_year cd_a ent con v_sel n_hog h_mud n_ren emp_ppal urban age 
@@ -52,23 +74,33 @@ clear
 	#delimit cr
 	
 	local cycle = 1
-        forvalues yyyy =  2005/2025 {
-	forvalues qq = 1/4 {
-		clear
-		local counter = (`yyyy'-2005)*4 + `qq'
-		
-                if (`counter'!=62 & `counter'<=83) {
+	forvalues yyyy = `panel_start_year'/`panel_end_year' {
+		forvalues qq = 1/4 {
+			if `yyyy' == `panel_end_year' & `qq' > `panel_end_quarter' {
+				continue
+			}
 
-				noi di "MEX_`yyyy'_ENOE-Q`qq'"
-					       cap use `myvars'  using "$path/MEX_`yyyy'_ENOE-Q`qq'/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD_ALL.dta", clear
-					if _rc cap use `myvars2' using "$path/MEX_`yyyy'_ENOE-Q`qq'/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD_ALL.dta", clear
-				noi di "------"
-				noi di ""
-				
-				gen byte quarter = `qq'
-				cap gen tipo = ""
-					
-			if `cycle' == 1 {	
+			local harm_file "$path/MEX_`yyyy'_ENOE-Q`qq'/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD_ALL.dta"
+			cap confirm file "`harm_file'"
+			if _rc {
+				continue
+			}
+
+			clear
+			noi di "MEX_`yyyy'_ENOE-Q`qq'"
+			cap use `myvars' using "`harm_file'", clear
+			if _rc cap use `myvars2' using "`harm_file'", clear
+			if _rc {
+				noi di as error "Skipping MEX_`yyyy'_ENOE-Q`qq': cannot read harmonized file"
+				continue
+			}
+			noi di "------"
+			noi di ""
+
+			gen byte quarter = `qq'
+			cap gen tipo = ""
+
+			if `cycle' == 1 {
 				frame put _all, into(frameglobal)
 				frame change default
 			}
@@ -77,10 +109,14 @@ clear
 				quietly myfrappend _all, from(default)
 				frame change default
 			}
-			
+
 			local cycle = `cycle'+1
 		}
 	}
+
+	if `cycle' == 1 {
+		di as error "No harmonized quarter files found for panel window `panel_tag'"
+		exit 2000
 	}
 
 	frame change frameglobal
@@ -182,7 +218,8 @@ clear
 	keep foliop folioh q_panel tipo urban age year quarter n_ent male relationharm educy educat7 lstatus informal industry_orig hhid hsize laborincome mv ingreso tamh pid pid_p panel pob lpT urb ///
 	     `myvars2'
 		 
-	save "$path/PANEL/DATA/MEX_2005_2023_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta", replace	
+	save "`fullsample_file'", replace
+	copy "`fullsample_file'" "`fullsample_latest'", replace
 	frame reset	
 
 /*******************************************************************************

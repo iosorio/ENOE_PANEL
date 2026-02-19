@@ -1,0 +1,89 @@
+# ENOE Quarterly Agent: From Manual Pain to a Reproducible Pipeline
+
+There was one recurring problem: every new ENOE quarter required repeating the same fragile manual steps.
+
+Find new INEGI microdata.  
+Download and place ZIP files in the right folder.  
+Adjust quarter/year paths.  
+Run harmonization and panel scripts.  
+Hope nothing changed in the schema.
+
+This folder now contains an agent workflow that automates that process with traceable runs and explicit diagnostics.
+
+## What We Have Successfully Built
+
+### Phase 1: INEGI Detection + Download
+- Script: `phase1_detect_download.py`
+- Detects ENOE microdata releases from INEGI API.
+- Resolves quarter/year/variant metadata.
+- Downloads ZIPs into quarter-specific `Data/Original`.
+- Stores run state in `state/inegi_enoe_phase1_state.json`.
+
+### Phase 2A: Quarter Scaffold
+- Script: `phase2_scaffold_quarter.py`
+- Creates a new quarter folder from a prior quarter template.
+- Updates year/quarter references in harmonization do-files.
+- Cleans stale extracted/harmonized outputs in scaffolded folders.
+
+### Phase 2B: Stata Pipeline Execution
+- Script: `phase2_run_stata_pipeline.py`
+- Extracts raw `.dta` from ZIP into `Data/Stata`.
+- Validates required tables (`COE1T`, `COE2T`, `SDEMT`, `HOGT`, `VIVT`).
+- Runs harmonization, append, and panel construction.
+- Adds `stata_preflight` diagnostics (license/binary/timeout handling).
+- Writes structured run summaries under `state/runs/`.
+
+### Future-Proof Output Naming (Implemented)
+- `02_Append_ENOE_Surveys.do` and `03_Construct_panel_of_workers.do` now use dynamic panel horizon tags:
+  - `MEX_<start>_<endYear>Q<endQ>_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`
+  - `MEX_<start>_<endYear>Q<endQ>_PANEL_QUARTER.dta`
+- They also publish stable aliases:
+  - `MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta`
+  - `MEX_PANEL_QUARTER_latest.dta`
+
+### Phase 4: Schema Diff Intelligence
+- Script: `phase4_schema_diff.py`
+- Compares target quarter vs prior quarter schema directly from ZIPs.
+- Reports added/removed variables, known rename patterns, type changes.
+- Flags potential breaking changes before they silently affect outputs.
+
+### Phase 3: Single Orchestrator Entry Point
+- Script: `run_quarterly_agent.py`
+- One command that coordinates detection, scaffold, download, schema diff, and pipeline execution.
+- Produces an orchestrator run summary in `state/agent_runs/`.
+
+## One-Command Run
+
+From project root:
+
+```bash
+python3 ENOE_PANEL/Do-files/quarterly_agent/run_quarterly_agent.py \
+  --years 2025 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp
+```
+
+Notes:
+- If no explicit target quarter is passed, the agent chooses the latest quarter detected from INEGI state.
+- Add `--dry-run` to validate flow without changing outputs.
+- Add `--run-qc` to run QC after panel construction.
+- Add `--fail-on-schema-breaking` to stop when schema diff finds breaking changes.
+
+## Why This Matters
+
+This is no longer a collection of manual steps.  
+It is now an auditable workflow with:
+- deterministic commands,
+- persistent run state,
+- explicit error classification,
+- schema-change visibility,
+- and reproducible panel outputs with quarter tags.
+
+## Current Status
+
+The end-to-end `2025 Q3` pipeline has been successfully executed multiple times with the updated dynamic naming and produced:
+- `MEX_2005_2025Q3_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`
+- `MEX_2005_2025Q3_PANEL_QUARTER.dta`
+- `*_latest.dta` aliases
+
+The agent is ready for upcoming ENOE harmonization rounds with significantly lower operational risk.
