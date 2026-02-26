@@ -43,13 +43,16 @@ This folder now contains an agent workflow that automates that process with trac
 
 ### Phase 4: Schema Diff Intelligence
 - Script: `phase4_schema_diff.py`
-- Compares target quarter vs prior quarter schema directly from ZIPs.
+- Compares schema directly from ZIPs for any selected base/target pair.
 - Reports added/removed variables, known rename patterns, type changes.
 - Flags potential breaking changes before they silently affect outputs.
 
 ### Phase 3: Single Orchestrator Entry Point
 - Script: `run_quarterly_agent.py`
 - One command that coordinates detection, scaffold, download, schema diff, and pipeline execution.
+- Runs two schema checks by default:
+  - `schema_prev`: target vs immediately previous quarter.
+  - `schema_yoy`: target vs same quarter in prior year.
 - Produces an orchestrator run summary in `state/agent_runs/`.
 
 ## One-Command Run
@@ -67,7 +70,7 @@ Notes:
 - If no explicit target quarter is passed, the agent chooses the latest quarter detected from INEGI state.
 - Add `--dry-run` to validate flow without changing outputs.
 - Add `--run-qc` to run QC after panel construction.
-- Add `--fail-on-schema-breaking` to stop when schema diff finds breaking changes.
+- Add `--fail-on-schema-breaking` to stop when either schema check finds breaking changes.
 
 ## Why This Matters
 

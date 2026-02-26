@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import subprocess
 import sys
 import time
@@ -99,6 +100,58 @@ def choose_latest_target_from_state(state: dict[str, Any]) -> tuple[int, int] | 
     if not candidates:
         return None
     return sorted(candidates)[-1]
+
+
+def prev_quarter(year: int, quarter: int) -> tuple[int, int]:
+    if quarter > 1:
+        return year, quarter - 1
+    return year - 1, 4
+
+
+def choose_original_zip(original_dir: Path, year: int, quarter: int) -> Path | None:
+    preferred = [
+        original_dir / f"original_MEX_{year}_ENOE-Q{quarter}.zip",
+        original_dir / f"original_MEX_{year}-Q{quarter}.zip",
+    ]
+    for path in preferred:
+        if path.exists():
+            return path
+
+    token = re.compile(rf"(?i){year}.*(?:ENOE-)?Q{quarter}")
+    matching = [p for p in original_dir.glob("*.zip") if token.search(p.name)]
+    if matching:
+        return sorted(matching, key=lambda p: p.stat().st_mtime, reverse=True)[0]
+
+    zips = list(original_dir.glob("*.zip"))
+    if len(zips) == 1:
+        return zips[0]
+    return None
+
+
+def zip_available_for_quarter(repo_root: Path, year: int, quarter: int) -> tuple[bool, str]:
+    qroot = repo_root / f"MEX_{year}_ENOE-Q{quarter}"
+    original_dir = qroot / f"MEX_{year}_ENOE_V01_M" / "Data" / "Original"
+    if not original_dir.exists():
+        return False, f"Original dir missing: {original_dir}"
+
+    zip_path = choose_original_zip(original_dir, year, quarter)
+    if zip_path is None:
+        return False, f"No ZIP found for {year}-Q{quarter} under {original_dir}"
+
+    return True, str(zip_path)
+
+
+def aggregate_schema_status(*statuses: str) -> str:
+    values = [s for s in statuses if s]
+    if not values:
+        return "n/a"
+    if any(s == "failed" for s in values):
+        return "failed"
+    if any(s == "ok" for s in values):
+        return "ok"
+    if all(s.startswith("skipped") for s in values):
+        return "skipped"
+    return values[0]
 
 
 def panel_tag(start_year: int, end_year: int, end_quarter: int) -> str:
@@ -274,33 +327,110 @@ def main() -> int:
     summary["download_key"] = download_key
     summary["download_status"] = download_status
 
-    # Step 4: schema diff.
+    # Step 4: schema diff (dual checks: sequential + year-over-year).
     if args.skip_schema or fatal:
-        summary["steps"]["schema"] = {"status": "skipped" if args.skip_schema else "blocked"}
+        blocked_status = "skipped" if args.skip_schema else "blocked"
+        summary["steps"]["schema_prev"] = {"status": blocked_status}
+        summary["steps"]["schema_yoy"] = {"status": blocked_status}
+        summary["steps"]["schema"] = {"status": blocked_status}
     else:
-        cmd = [
-            sys.executable,
-            str(phase4_schema),
-            "--repo-root",
-            str(repo_root),
-            "--target-year",
-            str(target_year),
-            "--target-quarter",
-            str(target_quarter),
-            "--stata-bin",
-            args.stata_bin,
-            "--timeout-seconds",
-            str(min(args.timeout_seconds, 120)),
-        ]
-        if args.fail_on_schema_breaking:
-            cmd.append("--fail-on-breaking")
-        if args.verbose:
-            cmd.append("--verbose")
-        result = run_cmd(cmd, cwd=repo_root)
-        result["status"] = "ok" if result["returncode"] == 0 else "failed"
-        summary["steps"]["schema"] = result
-        if result["returncode"] != 0:
-            fatal = True
+        # 4A. Sequential check: target versus previous quarter.
+        prev_year, prev_q = prev_quarter(target_year, target_quarter)
+        prev_ok, prev_detail = zip_available_for_quarter(repo_root, prev_year, prev_q)
+        if not prev_ok:
+            summary["steps"]["schema_prev"] = {
+                "status": "skipped_missing_base",
+                "comparison": "previous_quarter",
+                "base": {"year": prev_year, "quarter": prev_q, "label": f"{prev_year}-Q{prev_q}"},
+                "target": {"year": target_year, "quarter": target_quarter, "label": f"{target_year}-Q{target_quarter}"},
+                "reason": prev_detail,
+            }
+        else:
+            cmd_prev = [
+                sys.executable,
+                str(phase4_schema),
+                "--repo-root",
+                str(repo_root),
+                "--target-year",
+                str(target_year),
+                "--target-quarter",
+                str(target_quarter),
+                "--base-year",
+                str(prev_year),
+                "--base-quarter",
+                str(prev_q),
+                "--comparison-tag",
+                "prev",
+                "--stata-bin",
+                args.stata_bin,
+                "--timeout-seconds",
+                str(min(args.timeout_seconds, 120)),
+            ]
+            if args.fail_on_schema_breaking:
+                cmd_prev.append("--fail-on-breaking")
+            if args.verbose:
+                cmd_prev.append("--verbose")
+            result_prev = run_cmd(cmd_prev, cwd=repo_root)
+            result_prev["status"] = "ok" if result_prev["returncode"] == 0 else "failed"
+            result_prev["comparison"] = "previous_quarter"
+            result_prev["base"] = {"year": prev_year, "quarter": prev_q, "label": f"{prev_year}-Q{prev_q}"}
+            result_prev["target"] = {"year": target_year, "quarter": target_quarter, "label": f"{target_year}-Q{target_quarter}"}
+            summary["steps"]["schema_prev"] = result_prev
+            if result_prev["returncode"] != 0:
+                fatal = True
+
+        # 4B. Year-over-year check: target versus same quarter in prior year.
+        yoy_year, yoy_q = target_year - 1, target_quarter
+        yoy_ok, yoy_detail = zip_available_for_quarter(repo_root, yoy_year, yoy_q)
+        if not yoy_ok:
+            summary["steps"]["schema_yoy"] = {
+                "status": "skipped_missing_base",
+                "comparison": "year_over_year_same_quarter",
+                "base": {"year": yoy_year, "quarter": yoy_q, "label": f"{yoy_year}-Q{yoy_q}"},
+                "target": {"year": target_year, "quarter": target_quarter, "label": f"{target_year}-Q{target_quarter}"},
+                "reason": yoy_detail,
+            }
+        else:
+            cmd_yoy = [
+                sys.executable,
+                str(phase4_schema),
+                "--repo-root",
+                str(repo_root),
+                "--target-year",
+                str(target_year),
+                "--target-quarter",
+                str(target_quarter),
+                "--base-year",
+                str(yoy_year),
+                "--base-quarter",
+                str(yoy_q),
+                "--comparison-tag",
+                "yoy",
+                "--stata-bin",
+                args.stata_bin,
+                "--timeout-seconds",
+                str(min(args.timeout_seconds, 120)),
+            ]
+            if args.fail_on_schema_breaking:
+                cmd_yoy.append("--fail-on-breaking")
+            if args.verbose:
+                cmd_yoy.append("--verbose")
+            result_yoy = run_cmd(cmd_yoy, cwd=repo_root)
+            result_yoy["status"] = "ok" if result_yoy["returncode"] == 0 else "failed"
+            result_yoy["comparison"] = "year_over_year_same_quarter"
+            result_yoy["base"] = {"year": yoy_year, "quarter": yoy_q, "label": f"{yoy_year}-Q{yoy_q}"}
+            result_yoy["target"] = {"year": target_year, "quarter": target_quarter, "label": f"{target_year}-Q{target_quarter}"}
+            summary["steps"]["schema_yoy"] = result_yoy
+            if result_yoy["returncode"] != 0:
+                fatal = True
+
+        summary["steps"]["schema"] = {
+            "status": aggregate_schema_status(
+                summary["steps"].get("schema_prev", {}).get("status", ""),
+                summary["steps"].get("schema_yoy", {}).get("status", ""),
+            ),
+            "checks": ["schema_prev", "schema_yoy"],
+        }
 
     # Step 5: phase2 pipeline execution decision.
     expected_panel = expected_panel_output(repo_root, args.panel_start_year, target_year, target_quarter)
@@ -351,7 +481,7 @@ def main() -> int:
 
     print(f"Quarterly agent status: {summary['status']}")
     print(f"Summary: {summary_path}")
-    for step in ("detect", "scaffold", "download", "schema", "pipeline"):
+    for step in ("detect", "scaffold", "download", "schema_prev", "schema_yoy", "schema", "pipeline"):
         status = summary["steps"].get(step, {}).get("status", "n/a")
         print(f"{step}: {status}")
 

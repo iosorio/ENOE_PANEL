@@ -48,6 +48,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--timeout-seconds", type=int, default=120)
     ap.add_argument("--out-dir", default=str(default_out_dir))
     ap.add_argument("--fail-on-breaking", action="store_true")
+    ap.add_argument("--comparison-tag", default="", help="Optional label appended to run/output id (e.g., prev, yoy)")
     ap.add_argument("--verbose", action="store_true")
     return ap.parse_args()
 
@@ -280,7 +281,11 @@ def main() -> int:
         print("ERROR: provide both --base-year and --base-quarter, or neither.", file=sys.stderr)
         return 2
 
-    run_id = f"{args.target_year}Q{args.target_quarter}_{timestamp_slug()}"
+    comp_tag = re.sub(r"[^A-Za-z0-9_-]+", "", args.comparison_tag.strip())
+    if comp_tag:
+        run_id = f"{args.target_year}Q{args.target_quarter}_{comp_tag}_{timestamp_slug()}"
+    else:
+        run_id = f"{args.target_year}Q{args.target_quarter}_{timestamp_slug()}"
     out_json = out_dir / f"phase4_schema_{run_id}.json"
     out_md = out_dir / f"phase4_schema_{run_id}.md"
 
@@ -291,6 +296,7 @@ def main() -> int:
         "version": 1,
         "run_id": run_id,
         "timestamp_utc": utc_now_iso(),
+        "comparison_tag": comp_tag,
         "base": {"year": base_year, "quarter": base_quarter, "label": quarter_label(base_year, base_quarter)},
         "target": {
             "year": args.target_year,

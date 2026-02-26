@@ -25,7 +25,7 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
   - `phase1_detect_download.py` detects/releases and downloads ENOE ZIPs.
   - `phase2_scaffold_quarter.py` scaffolds new quarter folders from prior templates.
   - `phase2_run_stata_pipeline.py` runs extract/harmonize/append/panel (+ optional QC).
-  - `phase4_schema_diff.py` compares prior-vs-target quarter schema to flag changes.
+  - `phase4_schema_diff.py` compares schemas across two selected quarters.
   - `run_quarterly_agent.py` orchestrates the end-to-end run.
   - `state/` stores JSON run manifests for reproducibility and diagnostics.
 - `MEX_YYYY_ENOE-QX/` — per-quarter folders with GLD Programs/Data.
@@ -68,8 +68,13 @@ python3 Do-files/quarterly_agent/run_quarterly_agent.py \
 Useful flags:
 - `--dry-run` validates orchestration without changing data outputs.
 - `--run-qc` executes QC after panel construction.
-- `--fail-on-schema-breaking` stops the run on breaking schema changes.
-- `--skip-scaffold-if-exists` avoids recreating quarter folders.
+- `--fail-on-schema-breaking` stops the run if either schema check is breaking.
+- `--force-scaffold` recreates the quarter scaffold even if the target folder already exists.
+
+Schema checks executed by default:
+- `schema_prev`: target quarter versus immediately previous quarter.
+- `schema_yoy`: target quarter versus same quarter in the prior year.
+- If a baseline quarter is unavailable (for example very early historical quarters), that check is marked `skipped_missing_base`.
 
 ## Optional parallel run
 `PANEL/DO/00_Process_ENOE_quarterly_data.do` and `01_Append_ENOE_quarterly_data.do` include parallel run logic that spawns year-specific batch do-files and executes them via `myscript.sh` (macOS) or `.bat` (Windows). Use only if the path/user blocks match your environment.
@@ -100,7 +105,7 @@ Outputs
 - Quarterly agent run manifests are stored under `Do-files/quarterly_agent/state/`:
   - `state/agent_runs/agent_run_<timestamp>.json`
   - `state/runs/phase2_run_<year>Q<quarter>_<timestamp>.json`
-  - `state/schema/phase4_schema_<year>Q<quarter>_<timestamp>.json`
+  - `state/schema/phase4_schema_<year>Q<quarter>_<comparison>_<timestamp>.json` (`comparison` is typically `prev` or `yoy`)
 - Scripts assume lowercase variable names after `rename *, lower;`.
 - Keep the directory structure intact (GLD format) for relative paths to resolve.
 - Harmonization scripts now set `path_in_do` to `\`server'/Do-files` for `ent_mun_label.do`.
