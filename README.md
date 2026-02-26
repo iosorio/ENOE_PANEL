@@ -23,6 +23,7 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
   - Label helpers: `ent_mun_label.do`, `lblc_mnpio.do`.
 - `Do-files/quarterly_agent/` — quarterly automation scripts:
   - `phase1_detect_download.py` detects/releases and downloads ENOE ZIPs.
+  - `phase1b_sync_poverty_lines.py` syncs INEGI poverty lines and patches the target harmonization do-file.
   - `phase2_scaffold_quarter.py` scaffolds new quarter folders from prior templates.
   - `phase2_run_stata_pipeline.py` runs extract/harmonize/append/panel (+ optional QC).
   - `phase4_schema_diff.py` compares schemas across two selected quarters.
@@ -33,7 +34,7 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 - `Output/` — legacy outputs (if present).
 - `Doc/Documentation/` — consolidated reference documentation, indexed at `Doc/Documentation/INDEX.md`.
 - `Doc/Source_Packages/` — canonical crosswalk scripts (`programs/`) and index at `Doc/Source_Packages/INDEX.md`. Set `ENOE_DOCS` to the folder containing `SCIAN_18_ISIC_4.xlsx`, `SCIAN_07_ISIC_4.xlsx`, and `tablas_comparativas.xlsx` before running those scripts.
-- `Doc/poverty_lines_inegi/` — poverty line reference file.
+- `Doc/poverty_lines_inegi/` — INEGI poverty line inputs and generated monthly/quarterly tables used by harmonization.
 - `Do-files/ent_mun_label.do` — shared geographic label helper now referenced by harmonization scripts.
 - `Do-files/Quality_Checks/` — canonical GLD quality checks and runners (see `Do-files/Quality_Checks/INDEX.md`).
 - `Output/Quality_Checks/` — generated quality-check outputs by year/quarter.
@@ -52,7 +53,7 @@ This will:
 - Append and construct panel flags/IDs.
 - Build the balanced rotating panel.
 
-## Quarterly agent automation (phases 1-4)
+## Quarterly agent automation (phases 1-4 + poverty sync)
 Run from repository root:
 
 ```bash
@@ -70,6 +71,14 @@ Useful flags:
 - `--run-qc` executes QC after panel construction.
 - `--fail-on-schema-breaking` stops the run if either schema check is breaking.
 - `--force-scaffold` recreates the quarter scaffold even if the target folder already exists.
+- `--skip-poverty-sync` bypasses INEGI poverty-line refresh and do-file patch (not recommended for production runs).
+
+Poverty-line sync executed by default:
+- Pulls monthly series from INEGI sources (preferred: INEGI-hosted XLSX/ZIP; fallback: INEGI indicator API).
+- Writes canonical tables:
+  - `Doc/poverty_lines_inegi/poverty_lines_monthly.csv`
+  - `Doc/poverty_lines_inegi/poverty_lines_quarterly.csv`
+- Patches the target quarter harmonization do-file to set only the current quarter scalars from `poverty_lines_quarterly.csv`.
 
 Schema checks executed by default:
 - `schema_prev`: target quarter versus immediately previous quarter.
@@ -104,6 +113,7 @@ Outputs
 - Each step writes a log to `Do-files/Logs/`.
 - Quarterly agent run manifests are stored under `Do-files/quarterly_agent/state/`:
   - `state/agent_runs/agent_run_<timestamp>.json`
+  - `state/poverty/phase1b_poverty_sync_<timestamp>.json`
   - `state/runs/phase2_run_<year>Q<quarter>_<timestamp>.json`
   - `state/schema/phase4_schema_<year>Q<quarter>_<comparison>_<timestamp>.json` (`comparison` is typically `prev` or `yoy`)
 - Scripts assume lowercase variable names after `rename *, lower;`.

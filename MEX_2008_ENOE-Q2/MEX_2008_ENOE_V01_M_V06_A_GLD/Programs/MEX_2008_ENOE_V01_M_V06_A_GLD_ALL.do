@@ -2293,6 +2293,22 @@ The restrictions below could be completed with the following, yet these are not 
 	local x = `q'`y';
 	noi di "local x = `x'";
 	
+
+	* Dynamic poverty lines (INEGI source, quarterly table)
+	preserve;
+		import delimited using "$path/Doc/poverty_lines_inegi/poverty_lines_quarterly.csv", clear varnames(1);
+		destring year quarter rural urban, replace force;
+		keep if year == `yy' & quarter == `q';
+		count;
+		if r(N) != 1 {;
+			di as error "Missing poverty line row for `yy'-Q`q' in Doc/poverty_lines_inegi/poverty_lines_quarterly.csv";
+			exit 459;
+		};
+		local lp_rural = rural[1];
+		local lp_urban = urban[1];
+	restore;
+	scalar uT`x' = `lp_urban';
+	scalar rT`x' = `lp_rural';
 	gen lpT`x' = cond(rururb==0,uT`x',rT`x') ;
 	gen pob = cond((ingreso/tamh)<lpT`x',1,0) ;	
 	

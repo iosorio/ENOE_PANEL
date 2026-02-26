@@ -19,6 +19,15 @@ This folder now contains an agent workflow that automates that process with trac
 - Downloads ZIPs into quarter-specific `Data/Original`.
 - Stores run state in `state/inegi_enoe_phase1_state.json`.
 
+### Phase 1B: INEGI Poverty-Line Sync + Target Scalar Injection
+- Script: `phase1b_sync_poverty_lines.py`
+- Uses INEGI-only upstreams (LP page/hosted XLSX/ZIP; fallback to INEGI indicator API).
+- Builds canonical tables:
+  - `Doc/poverty_lines_inegi/poverty_lines_monthly.csv`
+  - `Doc/poverty_lines_inegi/poverty_lines_quarterly.csv`
+- Patches target harmonization do-file to assign only the active quarter values (`uT\`x'`, `rT\`x'`) from CSV.
+- Writes run summaries under `state/poverty/`.
+
 ### Phase 2A: Quarter Scaffold
 - Script: `phase2_scaffold_quarter.py`
 - Creates a new quarter folder from a prior quarter template.
@@ -49,7 +58,7 @@ This folder now contains an agent workflow that automates that process with trac
 
 ### Phase 3: Single Orchestrator Entry Point
 - Script: `run_quarterly_agent.py`
-- One command that coordinates detection, scaffold, download, schema diff, and pipeline execution.
+- One command that coordinates detection, scaffold, download, poverty sync, schema diff, and pipeline execution.
 - Runs two schema checks by default:
   - `schema_prev`: target vs immediately previous quarter.
   - `schema_yoy`: target vs same quarter in prior year.
@@ -71,6 +80,7 @@ Notes:
 - Add `--dry-run` to validate flow without changing outputs.
 - Add `--run-qc` to run QC after panel construction.
 - Add `--fail-on-schema-breaking` to stop when either schema check finds breaking changes.
+- Add `--skip-poverty-sync` only for troubleshooting; production runs should keep it enabled.
 
 ## Why This Matters
 
@@ -78,6 +88,7 @@ This is no longer a collection of manual steps.
 It is now an auditable workflow with:
 - deterministic commands,
 - persistent run state,
+- automated poverty-line refresh from INEGI sources,
 - explicit error classification,
 - schema-change visibility,
 - and reproducible panel outputs with quarter tags.

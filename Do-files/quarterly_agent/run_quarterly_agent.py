@@ -45,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--skip-detect", action="store_true")
     ap.add_argument("--skip-download", action="store_true")
     ap.add_argument("--skip-scaffold", action="store_true")
+    ap.add_argument("--skip-poverty-sync", action="store_true")
     ap.add_argument("--skip-schema", action="store_true")
     ap.add_argument("--skip-pipeline", action="store_true")
     ap.add_argument("--always-run-pipeline", action="store_true")
@@ -169,6 +170,7 @@ def main() -> int:
     script_dir = Path(__file__).resolve().parent
 
     phase1 = script_dir / "phase1_detect_download.py"
+    phase1b = script_dir / "phase1b_sync_poverty_lines.py"
     phase2_scaffold = script_dir / "phase2_scaffold_quarter.py"
     phase2_run = script_dir / "phase2_run_stata_pipeline.py"
     phase4_schema = script_dir / "phase4_schema_diff.py"
@@ -197,6 +199,7 @@ def main() -> int:
             "skip_detect": args.skip_detect,
             "skip_download": args.skip_download,
             "skip_scaffold": args.skip_scaffold,
+            "skip_poverty_sync": args.skip_poverty_sync,
             "skip_schema": args.skip_schema,
             "skip_pipeline": args.skip_pipeline,
             "always_run_pipeline": args.always_run_pipeline,
@@ -327,7 +330,35 @@ def main() -> int:
     summary["download_key"] = download_key
     summary["download_status"] = download_status
 
-    # Step 4: schema diff (dual checks: sequential + year-over-year).
+    # Step 4: poverty-line sync + do-file patch.
+    if args.skip_poverty_sync or fatal:
+        summary["steps"]["poverty_sync"] = {
+            "status": "skipped" if args.skip_poverty_sync else "blocked",
+        }
+    else:
+        cmd = [
+            sys.executable,
+            str(phase1b),
+            "--repo-root",
+            str(repo_root),
+            "--target-year",
+            str(target_year),
+            "--target-quarter",
+            str(target_quarter),
+            "--timeout-seconds",
+            str(min(args.timeout_seconds, 120)),
+        ]
+        if args.dry_run:
+            cmd.append("--dry-run")
+        if args.verbose:
+            cmd.append("--verbose")
+        result = run_cmd(cmd, cwd=repo_root)
+        result["status"] = "ok" if result["returncode"] == 0 else "failed"
+        summary["steps"]["poverty_sync"] = result
+        if result["returncode"] != 0:
+            fatal = True
+
+    # Step 5: schema diff (dual checks: sequential + year-over-year).
     if args.skip_schema or fatal:
         blocked_status = "skipped" if args.skip_schema else "blocked"
         summary["steps"]["schema_prev"] = {"status": blocked_status}
@@ -432,7 +463,7 @@ def main() -> int:
             "checks": ["schema_prev", "schema_yoy"],
         }
 
-    # Step 5: phase2 pipeline execution decision.
+    # Step 6: phase2 pipeline execution decision.
     expected_panel = expected_panel_output(repo_root, args.panel_start_year, target_year, target_quarter)
     should_run_pipeline = (
         args.always_run_pipeline
@@ -481,7 +512,7 @@ def main() -> int:
 
     print(f"Quarterly agent status: {summary['status']}")
     print(f"Summary: {summary_path}")
-    for step in ("detect", "scaffold", "download", "schema_prev", "schema_yoy", "schema", "pipeline"):
+    for step in ("detect", "scaffold", "download", "poverty_sync", "schema_prev", "schema_yoy", "schema", "pipeline"):
         status = summary["steps"].get(step, {}).get("status", "n/a")
         print(f"{step}: {status}")
 
