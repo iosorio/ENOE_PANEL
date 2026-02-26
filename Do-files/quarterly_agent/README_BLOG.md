@@ -42,6 +42,15 @@ This folder now contains an agent workflow that automates that process with trac
 - Adds `stata_preflight` diagnostics (license/binary/timeout handling).
 - Writes structured run summaries under `state/runs/`.
 
+### Phase 2C: Parallel Range Rebuild + OneDrive Safety Gate
+- Script: `phase2_rebuild_range_parallel.py`
+- Rebuilds a quarter range in parallel using `phase2_run_stata_pipeline.py --skip-append --skip-panel`.
+- Runs one final append/panel step after parallel harmonization jobs complete.
+- Enforces OneDrive pause acknowledgement before starting (default behavior):
+  - ack file: `state/locks/onedrive_paused.ok`
+  - run is blocked until ack exists (and is fresh).
+- Writes orchestrator summaries under `state/rebuild_parallel/`.
+
 ### Future-Proof Output Naming (Implemented)
 - `02_Append_ENOE_Surveys.do` and `03_Construct_panel_of_workers.do` now use dynamic panel horizon tags:
   - `MEX_<start>_<endYear>Q<endQ>_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`
@@ -81,6 +90,21 @@ Notes:
 - Add `--run-qc` to run QC after panel construction.
 - Add `--fail-on-schema-breaking` to stop when either schema check finds breaking changes.
 - Add `--skip-poverty-sync` only for troubleshooting; production runs should keep it enabled.
+
+Parallel range example (2021Q1 to 2025Q3):
+
+```bash
+touch ENOE_PANEL/Do-files/quarterly_agent/state/locks/onedrive_paused.ok
+
+python3 ENOE_PANEL/Do-files/quarterly_agent/phase2_rebuild_range_parallel.py \
+  --start-year 2021 \
+  --start-quarter 1 \
+  --end-year 2025 \
+  --end-quarter 3 \
+  --workers 3 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp
+```
 
 ## Why This Matters
 
