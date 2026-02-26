@@ -106,6 +106,25 @@ python3 ENOE_PANEL/Do-files/quarterly_agent/phase2_rebuild_range_parallel.py \
   --stata-bin stata-mp
 ```
 
+Local network Mac example:
+
+```bash
+rsync -azP --delete \
+  "/Users/israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL/" \
+  "israel@<REMOTE_IP>:/Users/israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL/"
+
+ssh israel@<REMOTE_IP> '
+cd "/Users/israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL" &&
+touch Do-files/quarterly_agent/state/locks/onedrive_paused.ok &&
+python3 Do-files/quarterly_agent/phase2_rebuild_range_parallel.py \
+  --start-year 2021 --start-quarter 1 \
+  --end-year 2025 --end-quarter 3 \
+  --workers 3 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp
+'
+```
+
 ## Why This Matters
 
 This is no longer a collection of manual steps.  

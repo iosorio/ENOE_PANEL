@@ -121,6 +121,29 @@ Useful flags:
 - `--continue-on-error` completes all submitted harmonization jobs even if some fail.
 - `--skip-finalize` runs only parallel harmonization jobs.
 
+Local network Mac example (same folder structure):
+
+```bash
+# From your main machine, sync code/data to the other Mac (replace <REMOTE_IP>)
+rsync -azP --delete \
+  "/Users/israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL/" \
+  "israel@<REMOTE_IP>:/Users/israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL/"
+
+# SSH into the remote Mac and run the parallel rebuild there
+ssh israel@<REMOTE_IP> '
+cd "/Users/israel/Library/CloudStorage/OneDrive-Personal/IOR/Projects/Y2025/FY25_MEX_MinimumWage/ENOE_PANEL" &&
+touch Do-files/quarterly_agent/state/locks/onedrive_paused.ok &&
+python3 Do-files/quarterly_agent/phase2_rebuild_range_parallel.py \
+  --start-year 2021 \
+  --start-quarter 1 \
+  --end-year 2025 \
+  --end-quarter 3 \
+  --workers 3 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp
+'
+```
+
 ## Python quality checks (qcheck-style)
 Run a single quarter:
 
