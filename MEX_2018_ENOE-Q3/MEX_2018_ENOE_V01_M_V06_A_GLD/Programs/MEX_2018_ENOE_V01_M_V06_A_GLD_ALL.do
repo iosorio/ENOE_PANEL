@@ -2077,277 +2077,93 @@ replace industrycat10_2_helper=. if lstatus!=1
 *</_laborincome_>
 
 *<_povertyincome_>
-	#delimit ;
-	
-	di in red "Promedio trimestral de los valores de la  
-	Línea de Pobreza Extrema por Ingresos" ;
+	gen ocupado=cond(clase1==1 & clase2==1,1,0)
 
-	scalar  uT105 	=	754.20	; 
-	scalar  rT105 	=	556.78	; 
-	scalar  uT205 	=	778.81	; 
-	scalar  rT205 	=	581.33	; 
-	scalar  uT305 	=	779.81	; 
-	scalar  rT305 	=	579.00	; 
-	scalar  uT405 	=	777.34	; 
-	scalar  rT405 	=	574.19	; 
+	destring p6b2 p6c, replace
+	recode p6b2 (999998=.) (999999=.)
 
-	scalar  uT106 	=	793.88	; 
-	scalar  rT106 	=	589.73	; 
-	scalar  uT206 	=	788.75	; 
-	scalar  rT206 	=	583.12	; 
-	scalar  uT306 	=	805.16	; 
-	scalar  rT306 	=	599.09	; 
-	scalar  uT406 	=	834.08	; 
-	scalar  rT406 	=	629.22	; 
+	*Recuperacion de ingresos por rangos de salarios minimos
+	gen double ingreso=p6b2
+	replace ingreso=0 if ocupado==0
+	replace ingreso=0 if p6b2==. & (p6_9==9 | p6a3==3)
+	replace ingreso=0.5*salario if p6b2==. & p6c==1
+	replace ingreso=1*salario if p6b2==. & p6c==2
+	replace ingreso=1.5*salario if p6b2==. & p6c==3
+	replace ingreso=2.5*salario if p6b2==. & p6c==4
+	replace ingreso=4*salario if p6b2==. & p6c==5
+	replace ingreso=7.5*salario if p6b2==. & p6c==6
+	replace ingreso=10*salario if p6b2==. & p6c==7
 
-	scalar  uT107 	=	851.23	; 
-	scalar  rT107 	=	641.50	; 
-	scalar  uT207 	=	840.49	; 
-	scalar  rT207 	=	629.76	; 
-	scalar  uT307 	=	846.91	; 
-	scalar  rT307 	=	634.21	; 
-	scalar  uT407 	=	866.83	; 
-	scalar  rT407 	=	650.59	; 
+	gen tamh = 1
 
-	scalar  uT108 	=	875.77	; 
-	scalar  rT108 	=	655.79	; 
-	scalar  uT208 	=	893.87	; 
-	scalar  rT208 	=	671.92	; 
-	scalar  uT308 	=	915.77	; 
-	scalar  rT308 	=	689.23	; 
-	scalar  uT408 	=	945.75	; 
-	scalar  rT408 	=	715.18	; 
+	rename fac factor
+	gen rururb = cond(t_loc>=1 & t_loc<=3,0,1)
+	label define ru 0 "Urbano" 1 "Rural"
+	label values rururb ru
+	destring ent, replace
 
-	scalar  uT109 	=	959.84	; 
-	scalar  rT109 	=	724.50	; 
-	scalar  uT209 	=	982.88	; 
-	scalar  rT209 	=	747.36	; 
-	scalar  uT309 	=	996.59	; 
-	scalar  rT309 	=	758.12	; 
-	scalar  uT409 	=	998.91	; 
-	scalar  rT409 	=	759.10	; 
+	gen mv=cond(ingreso==. & ocupado==1,1,0)
 
-	scalar  uT110 	=	1026.57	; 
-	scalar  rT110 	=	780.73	; 
-	scalar  uT210 	=	1017.39	; 
-	scalar  rT210 	=	769.93	; 
-	scalar  uT310 	=	1008.45	; 
-	scalar  rT310 	=	757.71  ; 
-	scalar  uT410 	=	1032.81	; 
-	scalar  rT410 	=	779.66	; 
+	foreach var in tamh ingreso mv ocupado {
+		rename `var' _`var'
+		bys folioh: egen double `var' = sum(_`var')
+		drop _`var'
+	}
 
-	scalar  uT111 	=	1049.07	; 
-	scalar  rT111 	=	791.31  ; 
-	scalar  uT211 	=	1049.74	; 
-	scalar  rT211 	=	793.00  ; 
-	scalar  uT311 	=	1051.53	; 
-	scalar  rT311 	=	794.21  ; 
-	scalar  uT411 	=	1076.46	; 
-	scalar  rT411 	=	817.32  ; 
+	*Se elimina a los hogares que tienen valores perdidos en ingreso
+	replace mv=1 if mv>0 & mv!=.
+	*drop if mv==1
 
-	scalar  uT112 	=	1106.36	; 
-	scalar  rT112 	=	843.60  ; 
-	scalar  uT212 	=	1113.08	; 
-	scalar  rT212 	=	847.74  ; 
-	scalar  uT312 	=	1152.23	; 
-	scalar  rT312 	=	884.25  ; 
-	scalar  uT412 	=	1172.86	; 
-	scalar  rT412 	=	901.01  ; 
-
-	scalar  uT113 	=	1185.68	; 
-	scalar  rT113 	=	908.25  ; 
-	scalar  uT213 	=	1197.91	; 
-	scalar  rT213 	=	918.90  ; 
-	scalar  uT313 	=	1197.24	; 
-	scalar  rT313 	=	913.56  ; 
-	scalar  uT413 	=	1220.45	; 
-	scalar  rT413 	=	934.09  ; 
-
-	scalar  uT114 	=	1252.56	; 
-	scalar  rT114 	=	952.71  ; 
-	scalar  uT214 	=	1243.86	; 
-	scalar  rT214 	=	939.94  ; 
-	scalar  uT314 	=	1264.97	; 
-	scalar  rT314 	=	954.15  ; 
-	scalar  uT414 	=	1295.15	; 
-	scalar  rT414 	=	982.12  ; 
-
-	scalar  uT115 	=	1296.14	; 
-	scalar  rT115 	=	981.50  ; 
-	scalar  uT215 	=	1300.42	; 
-	scalar  rT215 	=	985.56  ; 
-	scalar  uT315 	=	1312.35	; 
-	scalar  rT315 	=	992.04  ; 
-	scalar  uT415 	=	1329.88	; 
-	scalar  rT415 	=	1006.05	; 
-
-	scalar  uT116 	=	1366.93	; 
-	scalar  rT116 	=	1039.95	; 
-	scalar  uT216 	=	1359.11	; 
-	scalar  rT216 	=	1028.42	; 
-	scalar  uT316 	=	1358.61	; 
-	scalar  rT316 	=	1025.84	; 
-	scalar  uT416 	=	1388.35	; 
-	scalar  rT416 	=	1054.02	; 
-
-	scalar  uT117 	=	1407.01	; 
-	scalar  rT117 	=	1061.68	; 
-	scalar  uT217 	=	1439.17	; 
-	scalar  rT217 	=	1090.56	; 
-	scalar  uT317 	=	1490.80	; 
-	scalar  rT317 	=	1136.26	; 
-	scalar  uT417 	=	1501.22	; 
-	scalar  rT417 	=	1141.14	; 
-
-	scalar  uT118 	=	1509.99	; 
-	scalar  rT118 	=	1144.85	; 
-	scalar  uT218 	=	1508.32	; 
-	scalar  rT218 	=	1139.69	; 
-	scalar  uT318 	=	1537.71	; 
-	scalar  rT318 	=	1159.55	; 
-	scalar  uT418 	=	1564.27	; 
-	scalar  rT418 	=	1186.53	; 
-
-	scalar  uT119 	=	1594.81	; 
-	scalar  rT119 	=	1209.52	; 
-	scalar  uT219 	=	1597.63	; 
-	scalar  rT219 	=	1209.34	; 
-	scalar  uT319 	=	1604.31	; 
-	scalar  rT319 	=	1212.42	; 
-	scalar  uT419 	=	1619.78	; 
-	scalar  rT419 	=	1225.79	; 
-
-	scalar  uT120 	=	1664.71	; 
-	scalar  rT120 	=	1266.14	; 
-	scalar  uT320 	=	1701.39	; 
-	scalar  rT320 	=	1298.60	; 
-	scalar  uT420 	=	1719.75	; 
-	scalar  rT420 	=	1313.92	; 
-
-	scalar  uT121 	=	1732.14	; 
-	scalar  rT121 	=	1317.79	; 
-	scalar  uT221 	=	1777.32	; 
-	scalar  rT221 	=	1358.60	; 
-	scalar  uT321 	=	1828.63	; 
-	scalar  rT321 	=	1400.08	; 
-	scalar  uT421 	=	1877.13	; 
-	scalar  rT421 	=	1443.29	; 
-
-	scalar  uT122	=	1951.74 ; 
-	scalar  rT122 	=	1498.46	; 
-	scalar  uT222	=	1990.99 ; 
-	scalar  rT222 	=	1530.41	; 
-	scalar  uT322	=	2081.04 ; 
-	scalar  rT322 	=	1597.57	;
-	scalar  uT422	=	2115.73 ; 
-	scalar  rT422 	=	1625.32	;
-
-	scalar  uT123	=	2154.34 ; 
-	scalar  rT123 	=	1651.91 ; 
-	scalar  uT223	=	2176.94 ; 
-	scalar  rT223 	=	1665.47 ; 	
-	scalar  uT323	=	2218.76 ; 
-	scalar  rT323 	=	1697.79 ;
-	scalar  uT423	=	2239.99 ; 
-	scalar  rT423 	=	1716.25	;
-
-	scalar  uT124	=	2303.21 ; 
-	scalar  rT124 	=	1768.38 ;
-	scalar  uT224	=	2301.81 ; 
-	scalar  rT224 	=	1762.85 ;
-	scalar  uT324   =	2350.35 ;
-	scalar  rT324   =	1797.26 ;
-	scalar  uT424   =	2357.49 ;
-	scalar  rT424   =	1796.86 ;
-
-	scalar  uT125   =   	2369.94 ;
-	scalar  rT125   =   	1793.54 ;
-	scalar  uT225   =   	2423.77 ;
-	scalar  rT225   =   	1836.75 ;
-	scalar  uT325   =   	2453.38 ;
-	scalar  rT325   =   	1852.76 ;
-
-
-	
-	gen ocupado=cond(clase1==1 & clase2==1,1,0);
-
-	destring p6b2 p6c, replace;
-	recode p6b2 (999998=.) (999999=.);
-
-	*Recuperación de ingresos por rangos de salarios mínimos;
-	gen double ingreso=p6b2;
-	replace ingreso=0 if ocupado==0;
-	replace ingreso=0 if p6b2==. & (p6_9==9 | p6a3==3);
-	replace ingreso=0.5*salario if p6b2==. & p6c==1;
-	replace ingreso=1*salario if p6b2==. & p6c==2;
-	replace ingreso=1.5*salario if p6b2==. & p6c==3;
-	replace ingreso=2.5*salario if p6b2==. & p6c==4;
-	replace ingreso=4*salario if p6b2==. & p6c==5;
-	replace ingreso=7.5*salario if p6b2==. & p6c==6;
-	replace ingreso=10*salario if p6b2==. & p6c==7;
-
-	gen tamh = 1 ; 
-
-	rename fac factor ;
-	gen rururb = cond(t_loc>=1 & t_loc<=3,0,1) ;
-	label define ru 0 "Urbano" 1 "Rural" ;
-	label values rururb ru ;
-	destring ent, replace;
-
-	gen mv=cond(ingreso==. & ocupado==1,1,0);
-	
-	foreach var in tamh ingreso mv ocupado {;
-		rename `var' _`var';
-		bys folioh: egen double `var' = sum(_`var');
-		drop _`var';
-	};
-	
-	*Se elimina a los hogares que tienen valores perdidos en ingreso;
-	replace mv=1 if mv>0 & mv!=.;
-	*drop if mv==1;	
-	
-	gen _quarter = substr(wave,2,1);
-	destring _quarter, replace;
-	sum _quarter;
-		local q = r(mean);
-	drop _quarter;
-	sum year;
-		local yy = r(mean);
-		local y = substr("`yy'",3,2);
-	local x = `q'`y';
-	noi di "local x = `x'";
-	
+	gen _quarter = substr(wave,2,1)
+	destring _quarter, replace
+	sum _quarter
+		local q = r(mean)
+	drop _quarter
+	sum year
+		local yy = r(mean)
+		local y = substr("`yy'",3,2)
+	local x = `q'`y'
+	noi di "local x = `x'"
 
 	* Dynamic poverty lines (INEGI source, quarterly table)
-	preserve;
-		import delimited using "$path/Doc/poverty_lines_inegi/poverty_lines_quarterly.csv", clear varnames(1);
-		destring year quarter rural urban, replace force;
-		keep if year == `yy' & quarter == `q';
-		count;
-		if r(N) != 1 {;
-			di as error "Missing poverty line row for `yy'-Q`q' in Doc/poverty_lines_inegi/poverty_lines_quarterly.csv";
-			exit 459;
-		};
-		local lp_rural = rural[1];
-		local lp_urban = urban[1];
-	restore;
-	scalar uT`x' = `lp_urban';
-	scalar rT`x' = `lp_rural';
-	gen lpT`x' = cond(rururb==0,uT`x',rT`x') ;
-	gen pob = cond((ingreso/tamh)<lpT`x',1,0) ;	
-	
-	replace pob = . if mv==1;
-	drop rururb ocupado;
-	rename lpT`x' lpT;
+	local poverty_csv "$path/Doc/poverty_lines_inegi/poverty_lines_quarterly.csv"
+	cap confirm file "`poverty_csv'"
+	if _rc {
+		local poverty_csv "`server'/Doc/poverty_lines_inegi/poverty_lines_quarterly.csv"
+		cap confirm file "`poverty_csv'"
+	}
+	if _rc {
+		di as error "Missing poverty lines CSV: `poverty_csv'"
+		exit 601
+	}
 
-	label var tamh 		"Household size for per capita consumption, CONEVAL";
-	label var ingreso 	"Income monthly LCU, adding p6c minimum wage brackets, CONEVAL";
-	label var mv 		"Household with missing incomes excluded from poverty calculation, CONEVAL";
-	label var lpT		"Income poverty line, CONEVAL";
-	label var pob		"Poor by income, CONEVAL";
-	
-	#delimit cr
+	preserve
+		import delimited using "`poverty_csv'", clear varnames(1)
+		destring year quarter rural urban, replace force
+		keep if year == `yy' & quarter == `q'
+		count
+		if r(N) != 1 {
+			di as error "Missing poverty line row for `yy'-Q`q' in `poverty_csv'"
+			exit 459
+		}
+		local lp_rural = rural[1]
+		local lp_urban = urban[1]
+	restore
 
+	scalar uT`x' = `lp_urban'
+	scalar rT`x' = `lp_rural'
+	gen lpT`x' = cond(rururb==0,uT`x',rT`x')
+	gen pob = cond((ingreso/tamh)<lpT`x',1,0)
+
+	replace pob = . if mv==1
+	drop rururb ocupado
+	rename lpT`x' lpT
+
+	label var tamh 		"Household size for per capita consumption, CONEVAL"
+	label var ingreso 	"Income monthly LCU, adding p6c minimum wage brackets, CONEVAL"
+	label var mv 		"Household with missing incomes excluded from poverty calculation, CONEVAL"
+	label var lpT		"Income poverty line, CONEVAL"
+	label var pob		"Poor by income, CONEVAL"
 *</_povertyincome_>
 
 *----------8.13: Labour cleanup------------------------------*

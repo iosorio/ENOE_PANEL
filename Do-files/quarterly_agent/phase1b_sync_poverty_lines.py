@@ -54,6 +54,100 @@ SPANISH_MONTHS = {
     "dic": 12,
 }
 
+POVERTY_BLOCK_PATTERN = re.compile(
+    r"\*<_povertyincome_>.*?(?:\*</_povertyincome_>|</_povertyincome_>)",
+    re.DOTALL,
+)
+POVERTY_BLOCK_REPLACEMENT = """*<_povertyincome_>
+	gen ocupado=cond(clase1==1 & clase2==1,1,0)
+
+	destring p6b2 p6c, replace
+	recode p6b2 (999998=.) (999999=.)
+
+	*Recuperacion de ingresos por rangos de salarios minimos
+	gen double ingreso=p6b2
+	replace ingreso=0 if ocupado==0
+	replace ingreso=0 if p6b2==. & (p6_9==9 | p6a3==3)
+	replace ingreso=0.5*salario if p6b2==. & p6c==1
+	replace ingreso=1*salario if p6b2==. & p6c==2
+	replace ingreso=1.5*salario if p6b2==. & p6c==3
+	replace ingreso=2.5*salario if p6b2==. & p6c==4
+	replace ingreso=4*salario if p6b2==. & p6c==5
+	replace ingreso=7.5*salario if p6b2==. & p6c==6
+	replace ingreso=10*salario if p6b2==. & p6c==7
+
+	gen tamh = 1
+
+	rename fac factor
+	gen rururb = cond(t_loc>=1 & t_loc<=3,0,1)
+	label define ru 0 "Urbano" 1 "Rural"
+	label values rururb ru
+	destring ent, replace
+
+	gen mv=cond(ingreso==. & ocupado==1,1,0)
+
+	foreach var in tamh ingreso mv ocupado {
+		rename `var' _`var'
+		bys folioh: egen double `var' = sum(_`var')
+		drop _`var'
+	}
+
+	*Se elimina a los hogares que tienen valores perdidos en ingreso
+	replace mv=1 if mv>0 & mv!=.
+	*drop if mv==1
+
+	gen _quarter = substr(wave,2,1)
+	destring _quarter, replace
+	sum _quarter
+		local q = r(mean)
+	drop _quarter
+	sum year
+		local yy = r(mean)
+		local y = substr("`yy'",3,2)
+	local x = `q'`y'
+	noi di "local x = `x'"
+
+	* Dynamic poverty lines (INEGI source, quarterly table)
+	local poverty_csv "$path/Doc/poverty_lines_inegi/poverty_lines_quarterly.csv"
+	cap confirm file "`poverty_csv'"
+	if _rc {
+		local poverty_csv "`server'/Doc/poverty_lines_inegi/poverty_lines_quarterly.csv"
+		cap confirm file "`poverty_csv'"
+	}
+	if _rc {
+		di as error "Missing poverty lines CSV: `poverty_csv'"
+		exit 601
+	}
+
+	preserve
+		import delimited using "`poverty_csv'", clear varnames(1)
+		destring year quarter rural urban, replace force
+		keep if year == `yy' & quarter == `q'
+		count
+		if r(N) != 1 {
+			di as error "Missing poverty line row for `yy'-Q`q' in `poverty_csv'"
+			exit 459
+		}
+		local lp_rural = rural[1]
+		local lp_urban = urban[1]
+	restore
+
+	scalar uT`x' = `lp_urban'
+	scalar rT`x' = `lp_rural'
+	gen lpT`x' = cond(rururb==0,uT`x',rT`x')
+	gen pob = cond((ingreso/tamh)<lpT`x',1,0)
+
+	replace pob = . if mv==1
+	drop rururb ocupado
+	rename lpT`x' lpT
+
+	label var tamh 		"Household size for per capita consumption, CONEVAL"
+	label var ingreso 	"Income monthly LCU, adding p6c minimum wage brackets, CONEVAL"
+	label var mv 		"Household with missing incomes excluded from poverty calculation, CONEVAL"
+	label var lpT		"Income poverty line, CONEVAL"
+	label var pob		"Poor by income, CONEVAL"
+*</_povertyincome_>"""
+
 
 @dataclass(frozen=True)
 class MonthlyPoint:
@@ -376,39 +470,16 @@ def patch_target_harmonization_do(repo_root: Path, year: int, quarter: int, dry_
         return {"status": "missing_do", "path": str(do_path)}
 
     text = do_path.read_text(encoding="utf-8", errors="replace")
-    if "poverty_lines_quarterly.csv" in text:
-        return {"status": "already_patched", "path": str(do_path)}
-
-    pattern = re.compile(
-        r"(\n\s*local x = `q'`y';\s*\n\s*noi di \"local x = `x'\";\s*\n)",
-        flags=re.MULTILINE,
-    )
-
-    snippet = (
-        "\n\t* Dynamic poverty lines (INEGI source, quarterly table)\n"
-        "\tpreserve;\n"
-        "\t\timport delimited using \"$path/Doc/poverty_lines_inegi/poverty_lines_quarterly.csv\", clear varnames(1);\n"
-        "\t\tdestring year quarter rural urban, replace force;\n"
-        "\t\tkeep if year == `yy' & quarter == `q';\n"
-        "\t\tcount;\n"
-        "\t\tif r(N) != 1 {;\n"
-        "\t\t\tdi as error \"Missing poverty line row for `yy'-Q`q' in Doc/poverty_lines_inegi/poverty_lines_quarterly.csv\";\n"
-        "\t\t\texit 459;\n"
-        "\t\t};\n"
-        "\t\tlocal lp_rural = rural[1];\n"
-        "\t\tlocal lp_urban = urban[1];\n"
-        "\trestore;\n"
-        "\tscalar uT`x' = `lp_urban';\n"
-        "\tscalar rT`x' = `lp_rural';\n"
-    )
-
-    replaced, n = pattern.subn(r"\1" + snippet, text, count=1)
+    replaced, n = POVERTY_BLOCK_PATTERN.subn(POVERTY_BLOCK_REPLACEMENT, text, count=1)
     if n != 1:
         return {
-            "status": "patch_anchor_not_found",
+            "status": "patch_markers_not_found",
             "path": str(do_path),
-            "message": "Could not locate local x anchor in poverty block",
+            "message": "Could not locate povertyincome markers in harmonization do-file",
         }
+
+    if replaced == text:
+        return {"status": "already_patched", "path": str(do_path)}
 
     if not dry_run:
         do_path.write_text(replaced, encoding="utf-8")
