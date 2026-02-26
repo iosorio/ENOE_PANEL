@@ -37,7 +37,9 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 - `Doc/poverty_lines_inegi/` — INEGI poverty line inputs and generated monthly/quarterly tables used by harmonization.
 - `Do-files/ent_mun_label.do` — shared geographic label helper now referenced by harmonization scripts.
 - `Do-files/Quality_Checks/` — canonical GLD quality checks and runners (see `Do-files/Quality_Checks/INDEX.md`).
+- `Do-files/quality_checks_py/` — Python qcheck-style quality checks (`static`, `basic`, `categoric`) with batch support.
 - `Output/Quality_Checks/` — generated quality-check outputs by year/quarter.
+- `Output/Quality_Checks_Py/` — generated outputs from the Python qcheck-style runner.
 
 ## Prerequisites
 - Stata 16 or newer (tested with Stata MP).
@@ -86,7 +88,61 @@ Schema checks executed by default:
 - If a baseline quarter is unavailable (for example very early historical quarters), that check is marked `skipped_missing_base`.
 
 ## Optional parallel run
-`PANEL/DO/00_Process_ENOE_quarterly_data.do` and `01_Append_ENOE_quarterly_data.do` include parallel run logic that spawns year-specific batch do-files and executes them via `myscript.sh` (macOS) or `.bat` (Windows). Use only if the path/user blocks match your environment.
+Use `Do-files/quarterly_agent/phase2_rebuild_range_parallel.py` to rebuild quarter harmonizations in parallel and then run one final append/panel step.
+
+OneDrive safety gate (enabled by default):
+- Parallel run is blocked until an acknowledgement file exists and is fresh.
+- Default ack file:
+  - `Do-files/quarterly_agent/state/locks/onedrive_paused.ok`
+- Recommended flow:
+  1. Pause OneDrive sync manually from menu bar/tray.
+  2. Confirm pause with:
+
+```bash
+touch Do-files/quarterly_agent/state/locks/onedrive_paused.ok
+```
+
+  3. Run parallel rebuild:
+
+```bash
+python3 Do-files/quarterly_agent/phase2_rebuild_range_parallel.py \
+  --start-year 2021 \
+  --start-quarter 1 \
+  --end-year 2025 \
+  --end-quarter 3 \
+  --workers 3 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp
+```
+
+Useful flags:
+- `--wait-for-onedrive` waits for ack file instead of exiting immediately.
+- `--onedrive-ack-max-age-minutes 240` controls freshness tolerance.
+- `--continue-on-error` completes all submitted harmonization jobs even if some fail.
+- `--skip-finalize` runs only parallel harmonization jobs.
+
+## Python quality checks (qcheck-style)
+Run a single quarter:
+
+```bash
+python Do-files/quality_checks_py/qcheck_harmonization.py \
+  --dataset MEX_2025_ENOE-Q3/MEX_2025_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_2025_ENOE_V01_M_V06_A_GLD_ALL.dta \
+  --reports static,basic,categoric \
+  --profile full
+```
+
+Run all available quarters:
+
+```bash
+python Do-files/quality_checks_py/qcheck_harmonization.py \
+  --batch \
+  --start-year 2005 \
+  --end-year 2025 \
+  --reports static,basic,categoric \
+  --profile full
+```
+
+See `Do-files/quality_checks_py/README.md` for full options, output schema, and custom-rule support.
 
 ## Inputs and outputs
 Inputs
@@ -115,6 +171,7 @@ Outputs
   - `state/agent_runs/agent_run_<timestamp>.json`
   - `state/poverty/phase1b_poverty_sync_<timestamp>.json`
   - `state/runs/phase2_run_<year>Q<quarter>_<timestamp>.json`
+  - `state/rebuild_parallel/phase2_rebuild_parallel_<timestamp>.json`
   - `state/schema/phase4_schema_<year>Q<quarter>_<comparison>_<timestamp>.json` (`comparison` is typically `prev` or `yoy`)
 - Scripts assume lowercase variable names after `rename *, lower;`.
 - Keep the directory structure intact (GLD format) for relative paths to resolve.

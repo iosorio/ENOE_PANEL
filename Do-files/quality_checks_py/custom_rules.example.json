@@ -1,0 +1,21 @@
+{
+  "checks": [
+    {
+      "id": "custom.age_out_of_bounds",
+      "module": "Custom",
+      "variable": "age",
+      "description": "Age outside [0, 120]",
+      "severity": 1,
+      "expr": "(age < 0) | (age > 120)"
+    },
+    {
+      "id": "custom.weight_missing_prime_age",
+      "module": "Custom",
+      "variable": "weight",
+      "description": "Missing weight for ages 15-65",
+      "severity": 1,
+      "where": "(age >= 15) & (age <= 65)",
+      "expr": "weight.isna()"
+    }
+  ]
+}

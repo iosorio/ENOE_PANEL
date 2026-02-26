@@ -48,6 +48,12 @@ Canonical crosswalk scripts live in `Doc/Source_Packages/programs/`. Set `ENOE_D
 - Sequential runner: `Do-files/Quality_Checks/00_Run_All_Sequential.do`
 - Parallel runner (optional): `Do-files/Quality_Checks/00_Run_All_Parallel.do`
 - Outputs are written to `Output/Quality_Checks/by-year/YYYY/QX/`.
+- Python qcheck-style runner: `Do-files/quality_checks_py/qcheck_harmonization.py`
+  - Single dataset:
+    - `python Do-files/quality_checks_py/qcheck_harmonization.py --dataset <harmonized_dta> --reports static,basic,categoric --profile full`
+  - Batch:
+    - `python Do-files/quality_checks_py/qcheck_harmonization.py --batch --start-year 2005 --end-year 2025 --reports static,basic,categoric --profile full`
+  - Outputs are written to `Output/Quality_Checks_Py/by-year/YYYY/QX/`.
 
 ## 8) Outputs
 - Harmonized quarterly `.dta` in each quarter’s `Data/Harmonized/`.
