@@ -32,7 +32,11 @@
 <_ISCO Version_>				[ISCO 08] </_ISCO Version_>
 <_OCCUP National_>				[Sinco 2011] </_OCCUP National_>
 <_ISIC Version_>				[Rev.4] </_ISIC Version_>
-<_INDUS National_>				[SCIAN 2007] </_INDUS National_>
+<_INDUS National_>				[SCIAN Hogares 2018] </_INDUS National_>
+
+* Note (2026-02-26): ENOE RNM metadata indicates SCIAN Hogares 2018 is used from 2023-Q1 onward.
+* Source: https://www.inegi.org.mx/rnm/index.php/catalog/873/
+* Harmonization to ISIC in this do-file still uses legacy 3-digit crosswalk SCIAN_07_3D_ISIC_4.dta.
 
 -----------------------------------------------------------------------
 <_Version Control_>
@@ -44,6 +48,7 @@
 * Date: [2023-02-08] - [Correct empstat]
 * Date: [2023-03-29] - [Correct subnatid1, educy]
 * Date: [2023-11-11] - [Correct quarter, level1, d_mes, includevars, *set mem, includevars]
+* Date: [2026-02-26] - [Document SCIAN Hogares 2018 for ENOE 2025Q3 and update industry_orig labels]
 
 
 </_Version Control_>
@@ -1365,7 +1370,7 @@ foreach v of local ed_var {
 	gen industry_orig = p4a
 	replace industry_orig = . if age < minlaborage & age != .
 	replace industry_orig=. if lstatus!=1
-	label var industry_orig "Original survey industry code, main job 7 day recall"
+	label var industry_orig "Original industry code (SCIAN Hogares 2018), main job 7-day recall"
 *</_industry_orig_>
 
 
@@ -1718,7 +1723,7 @@ label var wmonths "Months of work in past 12 months primary job 7 day recall"
 *<_industry_orig_2_>
 	gen industry_orig_2 = p7c
 	replace industry_orig_2=. if lstatus!=1
-	label var industry_orig_2 "Original survey industry code, secondary job 7 day recall"
+	label var industry_orig_2 "Original industry code (SCIAN Hogares 2018), secondary job 7-day recall"
 *</_industry_orig_2_>
 
 
@@ -2508,4 +2513,3 @@ compress
 save "`path_output'/`out_file'", replace
 
 *</_% SAVE_>
-

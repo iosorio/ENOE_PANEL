@@ -16,6 +16,15 @@ version 16
 * Ensure strict variable matching for checks
 set varabbrev off, permanently
 
+* ENOE QC defaults to reduce structural false positives
+if "${qc_skip_dict_missing}" == "" global qc_skip_dict_missing "1"
+if "${qc_skip_dict_extra}" == "" global qc_skip_dict_extra "1"
+if "${qc_allow_numeric_string_vars}" == "" global qc_allow_numeric_string_vars "subnatid1 subnatid2 subnatid3"
+if "${qc_ignore_unique_vars}" == "" global qc_ignore_unique_vars "wave unempldur_l unempldur_u unitwage firmsize_l_2 firmsize_u_2"
+if "${qc_year_upper}" == "" global qc_year_upper "2100"
+if "${qc_wdi_no_data_flag}" == "" global qc_wdi_no_data_flag "99"
+if "${qc_skip_wdi}" == "" global qc_skip_wdi "0"
+
 * Validate inputs
 if "${qc_harmonized}" == "" {
 	display as error "qc_harmonized is not set"

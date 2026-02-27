@@ -1176,7 +1176,7 @@ foreach v of local ed_var {
 	gen industry_orig = p4a
 	replace industry_orig = . if age < minlaborage & age != .
 	replace industry_orig=. if lstatus!=1
-	label var industry_orig "Original survey industry code, main job 7 day recall"
+	label var industry_orig "Original industry code (SCIAN 2007), main job 7-day recall"
 *</_industry_orig_>
 
 
@@ -1499,7 +1499,7 @@ The restrictions below could be completed with the following, yet these are not 
 *<_industry_orig_2_>
 	gen industry_orig_2 = p7c
 	replace industry_orig_2=. if lstatus!=1
-	label var industry_orig_2 "Original survey industry code, secondary job 7 day recall"
+	label var industry_orig_2 "Original industry code (SCIAN 2007), secondary job 7-day recall"
 *</_industry_orig_2_>
 
 

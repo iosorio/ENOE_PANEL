@@ -32,7 +32,7 @@
 <_ISCO Version_>				[ISCO 08] </_ISCO Version_>
 <_OCCUP National_>				[Sinco 2019] </_OCCUP National_>
 <_ISIC Version_>				[Rev.4] </_ISIC Version_>
-<_INDUS National_>				[SCIAN 2007] </_INDUS National_>
+<_INDUS National_>				[SCIAN Hogares 2018] </_INDUS National_>
 -----------------------------------------------------------------------
 <_Version Control_>
 
@@ -1183,7 +1183,7 @@ foreach v of local ed_var {
 	gen industry_orig = p4a
 	replace industry_orig = . if age < minlaborage & age != .
 	replace industry_orig=. if lstatus!=1
-	label var industry_orig "Original survey industry code, main job 7 day recall"
+	label var industry_orig "Original industry code (SCIAN Hogares 2018), main job 7-day recall"
 *</_industry_orig_>
 
 
@@ -1505,7 +1505,7 @@ The restrictions below could be completed with the following, yet these are not 
 *<_industry_orig_2_>
 	gen industry_orig_2 = p7c
 	replace industry_orig_2=. if lstatus!=1
-	label var industry_orig_2 "Original survey industry code, secondary job 7 day recall"
+	label var industry_orig_2 "Original industry code (SCIAN Hogares 2018), secondary job 7-day recall"
 *</_industry_orig_2_>
 
 

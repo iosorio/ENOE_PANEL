@@ -167,6 +167,18 @@ python Do-files/quality_checks_py/qcheck_harmonization.py \
 
 See `Do-files/quality_checks_py/README.md` for full options, output schema, and custom-rule support.
 
+## QC triage (short guide)
+Prioritize QC findings in this order:
+
+1. `Flag = 1` (or `severity = 1` in Python): must-fix before trusting outputs.
+2. `Flag = 99`: investigate; can be expected in some quarters but must be reviewed.
+3. Within each group, rank by impact using `failed_ratio` first, then `failed_n`.
+4. Fix module order: `Overall` and `Survey & ID` first, then `Geography/Demography`, then `Labour`.
+5. Operational thresholds:
+   - `failed_ratio > 5%` on critical variables: block release.
+   - `0.5% to 5%`: fix before final panel if feasible.
+   - `<0.5%`: targeted review and document decision.
+
 ## Inputs and outputs
 Inputs
 - Raw ENOE data should be available under each quarter at `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_V01_M/Data/Original` and `.../Data/Stata` following the GLD layout.

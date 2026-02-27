@@ -46,6 +46,25 @@ use "${path_to_harmonization}", clear
 qui : count
 global overall_count = `r(N)'
 
+*----------0.5b: ENOE QC controls (defaults can be overridden by globals)
+local qc_skip_dict_missing = 0
+if "${qc_skip_dict_missing}" != "" local qc_skip_dict_missing = real("${qc_skip_dict_missing}")
+
+local qc_skip_dict_extra = 0
+if "${qc_skip_dict_extra}" != "" local qc_skip_dict_extra = real("${qc_skip_dict_extra}")
+
+local qc_year_upper = 2100
+if "${qc_year_upper}" != "" local qc_year_upper = real("${qc_year_upper}")
+
+local qc_wdi_no_data_flag = 99
+if "${qc_wdi_no_data_flag}" != "" local qc_wdi_no_data_flag = real("${qc_wdi_no_data_flag}")
+
+local qc_skip_wdi = 0
+if "${qc_skip_wdi}" != "" local qc_skip_wdi = real("${qc_skip_wdi}")
+
+local qc_allow_numeric_string_vars "${qc_allow_numeric_string_vars}"
+local qc_ignore_unique_vars "${qc_ignore_unique_vars}"
+
 *----------0.6: Read in isic universe, save as temp
 
 cap confirm variable isic_version
@@ -111,29 +130,33 @@ if `check' == 0 { // filename does not follow convention
 }
 
 *----------1.2: Variable from dictionary not in the data
-foreach var of global all_vars {
-	cap confirm variable `var'
-	if _rc != 0 {
-		post `memhold' ("Overall") ("`var'") ("Variable not in data") (.) (1)
+if `qc_skip_dict_missing' == 0 {
+	foreach var of global all_vars {
+		cap confirm variable `var'
+		if _rc != 0 {
+			post `memhold' ("Overall") ("`var'") ("Variable not in data") (.) (1)
+		}
 	}
 }
 
 *----------1.3: Variable in data that is not in dictionary
 preserve
-* First, drop vars from dictionary
-foreach var of global all_vars {
-	cap confirm variable `var'
-	if _rc == 0 { // var from dictionary in data
-		drop `var'
+if `qc_skip_dict_extra' == 0 {
+	* First, drop vars from dictionary
+	foreach var of global all_vars {
+		cap confirm variable `var'
+		if _rc == 0 { // var from dictionary in data
+			drop `var'
+		}
 	}
-}
 
-* Now record what is left over
-qui: describe, varlist
-if `r(k)' > 0 { // there are vars left over after dropping dictionary
-	foreach var in `r(varlist)' {
-		post `memhold' ("Overall") ("`var'") ("Variable not in dictionary") (.) (1)
-	}	
+	* Now record what is left over
+	qui: describe, varlist
+	if `r(k)' > 0 { // there are vars left over after dropping dictionary
+		foreach var in `r(varlist)' {
+			post `memhold' ("Overall") ("`var'") ("Variable not in dictionary") (.) (1)
+		}	
+	}
 }
 
 restore
@@ -161,7 +184,10 @@ foreach var of global numeric_vars {
 foreach var of global string_vars {
 	cap confirm string variable `var'
 	if _rc != 0 & _rc != 111 { // If neither string nor absent in the dataset
-		post `memhold' ("Overall") ("`var'") ("A string var is not string") (.) (1)
+		local _allow_numeric : list var in qc_allow_numeric_string_vars
+		if `_allow_numeric' == 0 {
+			post `memhold' ("Overall") ("`var'") ("A string var is not string") (.) (1)
+		}
 	}
 }
 
@@ -180,9 +206,12 @@ foreach var of global invariant_vars {
 foreach var of global change_should_vars {
 	cap confirm variable `var'
 	if _rc == 0 { // if var exists since if not captured in 1.1
-		qui: distinct `var'
-		if `r(ndistinct)' == 1 { // var takes just one value (r(ndistinct) == 1). All missing (r(ndistinct) == 0) is accepted
-			post `memhold' ("Overall") ("`var'") ("Variable is unique in dataset") (.) (99)
+		local _ignore_unique : list var in qc_ignore_unique_vars
+		if `_ignore_unique' == 0 {
+			qui: distinct `var'
+			if `r(ndistinct)' == 1 { // var takes just one value (r(ndistinct) == 1). All missing (r(ndistinct) == 0) is accepted
+				post `memhold' ("Overall") ("`var'") ("Variable is unique in dataset") (.) (99)
+			}
 		}
 	}
 
@@ -330,9 +359,9 @@ if _rc == 0 { // if var exists since if not captured in 1.1
 *----------2.3: year is four digit
 cap confirm variable year
 if _rc == 0 { // if var exists since if not captured in 1.1
-	qui : count if year < 1880 | year > 2021
+	qui : count if year < 1880 | year > `qc_year_upper'
 	if `r(N)' > 0 { // year outside the norm
-		post `memhold' ("Survey & ID") ("year") ("Variable year is not between 1880 and 2021") (.) (1)
+		post `memhold' ("Survey & ID") ("year") ("Variable year is not between 1880 and `qc_year_upper'") (.) (1)
 	} // end if year odd
 } // end if _rc == 0
 
@@ -1004,18 +1033,23 @@ foreach token of global wage_and_unit{
 * per default to 1, which represents it works. Through the code, checks are performed to see if
 * the assumption is true. If it does not, "wdiworks" is set to 0 and the checks on WDI are skipped.
 local wdiworks 1
+if `qc_skip_wdi' == 1 local wdiworks 0
 
 *----------9.1: Create comparison, merge it in
-levelsof countrycode, local(ccode)
-levelsof year, local(survey_year)
+if `qc_skip_wdi' == 0 {
+	levelsof countrycode, local(ccode)
+	levelsof year, local(survey_year)
+}
 
 tempfile static_check_file
 save `static_check_file'
 
-wbopendata, country(`ccode') clear
-cap confirm variable yr`survey_year'
-if _rc == 0 { // if data for that year exists
-	gen value = yr`survey_year'
+if `qc_skip_wdi' == 0 {
+	wbopendata, country(`ccode') clear
+	cap confirm variable yr`survey_year'
+	if _rc == 0 { // if data for that year exists
+		gen value = yr`survey_year'
+	}
 }
 
 * If the year column is not present, the variable "value" has not been created and thus
@@ -1060,19 +1094,32 @@ merge 1:m countrycode using `static_check_file', assert(match) nogen
 *----------9.2: Compare total population
 * Make comparison if "wdiworks" is set to 1, else inform no data for comparison
 if `wdiworks' == 1{
+	local wdi_pop_ready 0
+	cap confirm variable population_wdi
+	if _rc == 0 {
+		qui count if !missing(population_wdi)
+		if r(N) > 0 local wdi_pop_ready 1
+	}
 	cap confirm variable weight
-	if _rc == 0 { // if vars exist, else captured above
-		summarize weight [aw = weight]
+	if _rc == 0 & `wdi_pop_ready' == 1 {
+		qui summarize weight [aw = weight], meanonly
 		local survey_pop `r(sum_w)'
-		summarize population_wdi
+		qui summarize population_wdi, meanonly
 		local wdi_pop `r(mean)'
-
-		local pop_diff = abs((`survey_pop' - `wdi_pop')/`survey_pop')
-		post `memhold' ("WDI Comparison") ("Population") ("Survey population and WDI population for the year differ by ->") (`pop_diff') (1)
+		if !missing(`survey_pop') & `survey_pop' > 0 & !missing(`wdi_pop') {
+			local pop_diff = abs((`survey_pop' - `wdi_pop')/`survey_pop')
+			post `memhold' ("WDI Comparison") ("Population") ("Survey population and WDI population for the year differ by ->") (`pop_diff') (1)
+		}
+		else {
+			post `memhold' ("WDI Comparison") ("Population") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
+		}
+	}
+	else {
+		post `memhold' ("WDI Comparison") ("Population") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 	}
 }
 else {
-	post `memhold' ("WDI Comparison") ("Population") ("No WDI Data available") (.) (1)
+	post `memhold' ("WDI Comparison") ("Population") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 }
 
 
@@ -1080,63 +1127,102 @@ else {
 *----------9.3: Compare urbanization rate
 * Make comparison if "wdiworks" is set to 1, else inform no data for comparison
 if `wdiworks' == 1{
+	local wdi_urb_ready 0
+	cap confirm variable urbanization_wdi
+	if _rc == 0 {
+		qui count if !missing(urbanization_wdi)
+		if r(N) > 0 local wdi_urb_ready 1
+	}
 	cap confirm variable urban weight
-	if _rc == 0 { // if vars exist, else captured above
-		summarize urban [aw = weight]
+	if _rc == 0 & `wdi_urb_ready' == 1 {
+		qui summarize urban [aw = weight], meanonly
 		local survey_urb = round(r(mean)*100,0.1)
-		summarize urbanization_wdi
+		qui summarize urbanization_wdi, meanonly
 		local wdi_urb  = round(r(mean),0.1)
-
-		local urb_diff = abs((`survey_urb' - `wdi_urb')/`survey_urb')
-		post `memhold' ("WDI Comparison") ("Urbanization") ("Survey urbanization rate is `survey_urb'% and WDI urb rate for the year is `wdi_urb'%. Difference ->") (`urb_diff') (1)
+		if !missing(`survey_urb') & `survey_urb' > 0 & !missing(`wdi_urb') {
+			local urb_diff = abs((`survey_urb' - `wdi_urb')/`survey_urb')
+			post `memhold' ("WDI Comparison") ("Urbanization") ("Survey urbanization rate is `survey_urb'% and WDI urb rate for the year is `wdi_urb'%. Difference ->") (`urb_diff') (1)
+		}
+		else {
+			post `memhold' ("WDI Comparison") ("Urbanization") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
+		}
+	}
+	else {
+		post `memhold' ("WDI Comparison") ("Urbanization") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 	}
 }
 else {
-	post `memhold' ("WDI Comparison") ("Urbanization") ("No WDI Data available") (.) (1)
+	post `memhold' ("WDI Comparison") ("Urbanization") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 }
 
 *----------9.4: Compare 7 day labour force participation rate
 * Make comparison if "wdiworks" is set to 1, else inform no data for comparison
 if `wdiworks' == 1{
+	local wdi_lfp_ready 0
+	cap confirm variable lf_particip_wdi
+	if _rc == 0 {
+		qui count if !missing(lf_particip_wdi)
+		if r(N) > 0 local wdi_lfp_ready 1
+	}
 	cap confirm variable lstatus age weight
-	if _rc == 0 { // if vars exist, else captured above
+	if _rc == 0 & `wdi_lfp_ready' == 1 {
 		gen helper = .
 		replace helper = 0 if lstatus == 3 & inrange(age, 15,64)
 		replace helper = 1 if (lstatus == 1 | lstatus == 2) & inrange(age, 15,64)
-		summarize helper [aw = weight]
+		qui summarize helper [aw = weight], meanonly
 		local survey_lfp = round(r(mean)*100,0.1)
 		drop helper
-		summarize lf_particip_wdi
+		qui summarize lf_particip_wdi, meanonly
 		local wdi_lfp = round(r(mean),0.1)
-
-		local lfp_diff = abs((`survey_lfp' - `wdi_lfp')/`survey_lfp')
-		post `memhold' ("WDI Comparison") ("LFP 7 day") ("Survey 7 day LFP is `survey_lfp'% and WDI LFP for the year is `wdi_lfp'%. Difference ->") (`lfp_diff') (1)
+		if !missing(`survey_lfp') & `survey_lfp' > 0 & !missing(`wdi_lfp') {
+			local lfp_diff = abs((`survey_lfp' - `wdi_lfp')/`survey_lfp')
+			post `memhold' ("WDI Comparison") ("LFP 7 day") ("Survey 7 day LFP is `survey_lfp'% and WDI LFP for the year is `wdi_lfp'%. Difference ->") (`lfp_diff') (1)
+		}
+		else {
+			post `memhold' ("WDI Comparison") ("LFP 7 day") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
+		}
+	}
+	else {
+		post `memhold' ("WDI Comparison") ("LFP 7 day") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 	}
 }
 else {
-	post `memhold' ("WDI Comparison") ("LFP 7 day") ("No WDI Data available") (.) (1)
+	post `memhold' ("WDI Comparison") ("LFP 7 day") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 }
 
 *----------9.5: Compare 12 month labour force participation rate
 * Make comparison if "wdiworks" is set to 1, else inform no data for comparison
 if `wdiworks' == 1{
+	local wdi_lfp_ready 0
+	cap confirm variable lf_particip_wdi
+	if _rc == 0 {
+		qui count if !missing(lf_particip_wdi)
+		if r(N) > 0 local wdi_lfp_ready 1
+	}
 	cap confirm variable lstatus_year age weight
-	if _rc == 0 { // if vars exist, else captured above
+	if _rc == 0 & `wdi_lfp_ready' == 1 {
 		gen helper = .
 		replace helper = 0 if lstatus_year == 3 & inrange(age, 15,64)
 		replace helper = 1 if (lstatus_year == 1 | lstatus_year == 2) & inrange(age, 15,64)
-		summarize helper [aw = weight]
+		qui summarize helper [aw = weight], meanonly
 		local survey_lfp = round(r(mean)*100,0.1)
 		drop helper
-		summarize lf_particip_wdi
+		qui summarize lf_particip_wdi, meanonly
 		local wdi_lfp = round(r(mean),0.1)
-
-		local lfp_diff = abs((`survey_lfp' - `wdi_lfp')/`survey_lfp')
-		post `memhold' ("WDI Comparison") ("LFP 12 month") ("Survey 12 month LFP is `survey_lfp'% and WDI LFP for the year is `wdi_lfp'%. Difference ->") (`lfp_diff') (1)
+		if !missing(`survey_lfp') & `survey_lfp' > 0 & !missing(`wdi_lfp') {
+			local lfp_diff = abs((`survey_lfp' - `wdi_lfp')/`survey_lfp')
+			post `memhold' ("WDI Comparison") ("LFP 12 month") ("Survey 12 month LFP is `survey_lfp'% and WDI LFP for the year is `wdi_lfp'%. Difference ->") (`lfp_diff') (1)
+		}
+		else {
+			post `memhold' ("WDI Comparison") ("LFP 12 month") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
+		}
+	}
+	else {
+		post `memhold' ("WDI Comparison") ("LFP 12 month") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 	}
 }
 else {
-	post `memhold' ("WDI Comparison") ("LFP 12 month") ("No WDI Data available") (.) (1)
+	post `memhold' ("WDI Comparison") ("LFP 12 month") ("No WDI Data available") (.) (`qc_wdi_no_data_flag')
 }
 
 *----------9.6: Clean up vars from comparison
@@ -1153,4 +1239,3 @@ if `wdiworks' == 1{
 postclose `memhold'
 
 /* End of do-file */
-

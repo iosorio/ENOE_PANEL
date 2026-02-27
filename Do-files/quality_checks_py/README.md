@@ -60,6 +60,18 @@ Run summary:
 
 - `Output/Quality_Checks_Py/run_summary.json`
 
+## QC triage (short guide)
+Use this order when reviewing results:
+
+1. `severity = 1` rows first (must-fix).
+2. Then warning-level rows (for example expected all-missing/invariant warnings).
+3. Prioritize by `failed_ratio` and then `failed_n`.
+4. Start with `Overall` and `Survey & ID`, then `Geography/Demography`, then `Labour`.
+5. Suggested thresholds on critical variables:
+   - `failed_ratio > 5%`: block release.
+   - `0.5% to 5%`: fix before final panel if possible.
+   - `<0.5%`: targeted review and document if accepted.
+
 ## Static checks covered
 
 The static report uses `Do-files/Quality_Checks/helpers/Helper_GLD_VarLists.do` as the source of truth and implements checks aligned with the GLD/qcheck logic, including:
@@ -84,4 +96,3 @@ python Do-files/quality_checks_py/qcheck_harmonization.py \
 ```
 
 Expression fields are evaluated with `pandas.DataFrame.eval`.
-
