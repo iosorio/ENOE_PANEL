@@ -258,6 +258,14 @@ def classify_stata_issue(run_result: dict[str, Any]) -> dict[str, str] | None:
             "message": "Stata license seat unavailable (all seats in use).",
         }
 
+    runtime_match = re.search(r"(?m)^\s*r\(([1-9][0-9]*)\);\s*$", text)
+    if runtime_match:
+        code = runtime_match.group(1)
+        return {
+            "category": "stata_runtime_error",
+            "message": f"Stata runtime error detected in log (r({code})).",
+        }
+
     return None
 
 
@@ -451,7 +459,7 @@ def main() -> int:
             else:
                 try:
                     result = run_stata_do(args.stata_bin, hprog, args.timeout_seconds, cwd=hprog.parent)
-                    ok = result["returncode"] == 0 and hout.exists()
+                    ok = result["returncode"] == 0 and "diagnostic" not in result and hout.exists()
                     result["harm_output_exists"] = hout.exists()
                     result["status"] = "ok" if ok else "failed"
                     summary["steps"]["harmonization"] = result
@@ -474,7 +482,7 @@ def main() -> int:
         else:
             try:
                 result = run_stata_do(args.stata_bin, wrapper_append, args.timeout_seconds, cwd=repo_root)
-                ok = result["returncode"] == 0 and expected_fullsample.exists()
+                ok = result["returncode"] == 0 and "diagnostic" not in result and expected_fullsample.exists()
                 result["fullsample_exists"] = expected_fullsample.exists()
                 result["fullsample_latest_exists"] = expected_fullsample_latest.exists()
                 result["status"] = "ok" if ok else "failed"
@@ -495,7 +503,7 @@ def main() -> int:
             write_wrapper_do(wrapper_panel, repo_root, "Do-files/03_Construct_panel_of_workers.do", extra_globals=do_globals)
             try:
                 result = run_stata_do(args.stata_bin, wrapper_panel, args.timeout_seconds, cwd=repo_root)
-                ok = result["returncode"] == 0 and expected_panel.exists()
+                ok = result["returncode"] == 0 and "diagnostic" not in result and expected_panel.exists()
                 result["panel_output_exists"] = expected_panel.exists()
                 result["panel_latest_exists"] = expected_panel_latest.exists()
                 result["status"] = "ok" if ok else "failed"
@@ -515,7 +523,7 @@ def main() -> int:
         else:
             try:
                 result = run_stata_do(args.stata_bin, wrapper_qc, args.timeout_seconds, cwd=repo_root)
-                result["status"] = "ok" if result["returncode"] == 0 else "failed"
+                result["status"] = "ok" if result["returncode"] == 0 and "diagnostic" not in result else "failed"
                 summary["steps"]["qc"] = result
                 if result["status"] != "ok":
                     fatal_error = True

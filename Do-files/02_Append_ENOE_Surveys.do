@@ -66,11 +66,11 @@ clear
 	#delimit ;
 	local myvars "weight strata int_month int_year cd_a ent con v_sel n_hog h_mud n_ren emp_ppal urban age 
 	              year n_ent male relationharm educy educat7 lstatus industry_orig
-				  hhid hsize laborincome mv ingreso tamh pid pob lpT urb tipo subnatid1 subnatid2 subnatid3 cd_a ent mun";
+				  hhid hsize laborincome mv ingreso tamh pid pob lpT tipo subnatid1 subnatid2 subnatid3 cd_a ent mun";
 				  
 	local myvars2 "weight strata int_month int_year cd_a ent con v_sel n_hog h_mud n_ren emp_ppal urban age 
 	              year n_ent male relationharm educy educat7 lstatus industry_orig
-				  hhid hsize laborincome mv ingreso tamh pid pob lpT urb      subnatid1 subnatid2 subnatid3 cd_a ent mun";				  
+				  hhid hsize laborincome mv ingreso tamh pid pob lpT      subnatid1 subnatid2 subnatid3 cd_a ent mun";				  
 	#delimit cr
 	
 	local cycle = 1
@@ -214,9 +214,15 @@ clear
 	compress
 	
 	order year-int_month quarter panel pid_p
-	
+
+	capture confirm variable urb
+	if _rc {
+		gen urb = urban
+		label var urb "Legacy alias of urban"
+	}
+
 	keep foliop folioh q_panel tipo urban age year quarter n_ent male relationharm educy educat7 lstatus informal industry_orig hhid hsize laborincome mv ingreso tamh pid pid_p panel pob lpT urb ///
-	     `myvars2'
+		 `myvars2'
 		 
 	save "`fullsample_file'", replace
 	copy "`fullsample_file'" "`fullsample_latest'", replace

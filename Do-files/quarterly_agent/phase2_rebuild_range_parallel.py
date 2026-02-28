@@ -26,6 +26,11 @@ class QuarterRef:
         return f"{self.year}-Q{self.quarter}"
 
 
+KNOWN_MISSING_QUARTERS: dict[tuple[int, int], str] = {
+    (2020, 2): "ENOE 2020-Q2 is not available in-source (COVID-19 interruption).",
+}
+
+
 def utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
 
@@ -206,6 +211,24 @@ def run_harmonization_job(
     q: QuarterRef,
     args: argparse.Namespace,
 ) -> dict[str, Any]:
+    missing_reason = KNOWN_MISSING_QUARTERS.get((q.year, q.quarter))
+    if missing_reason:
+        expected = harmonized_output_path(repo_root, q)
+        return {
+            "quarter": {"year": q.year, "quarter": q.quarter, "label": q.label},
+            "status": "skipped",
+            "skip_reason": missing_reason,
+            "cmd": [],
+            "cwd": str(repo_root),
+            "returncode": 0,
+            "elapsed_seconds": 0.0,
+            "stdout_tail": "",
+            "stderr_tail": "",
+            "summary_path": "",
+            "harmonized_output": str(expected),
+            "harmonized_output_exists": expected.exists(),
+        }
+
     cmd = [
         sys.executable,
         str(phase2_script),
@@ -370,7 +393,7 @@ def main() -> int:
         for q in quarters:
             result = run_harmonization_job(repo_root, phase2_script, q, args)
             jobs.append(result)
-            if result["status"] != "ok":
+            if result["status"] not in {"ok", "skipped"}:
                 failed = True
                 if not args.continue_on_error:
                     break
@@ -386,7 +409,7 @@ def main() -> int:
                 if args.verbose:
                     q = res["quarter"]["label"]
                     print(f"{q}: {res['status']}")
-                if res["status"] != "ok":
+                if res["status"] not in {"ok", "skipped"}:
                     failed = True
                     if not args.continue_on_error:
                         # Already-submitted jobs will finish; we only block finalize.
