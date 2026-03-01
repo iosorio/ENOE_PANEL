@@ -59,6 +59,33 @@ This folder now contains an agent workflow that automates that process with trac
   - `MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta`
   - `MEX_PANEL_QUARTER_latest.dta`
 
+### Crosswalk Clarification: 4-Digit, 3-Digit, and 2-Digit SCIAN
+- ENOE industry source fields (`p4a`, `p7c`) are recorded as 4-digit national codes.
+- For 2023+ rounds, metadata points to **SCIAN Hogares 2018**.
+- In practice, harmonization uses **3-digit** crosswalk mapping:
+  - preferred: `SCIAN_18_3D_ISIC_4.dta`
+  - fallback: `SCIAN_07_3D_ISIC_4.dta`
+- Why not strict 4-digit matching by default:
+  - ENOE includes many 4-digit aggregate/unspecified endings that do not map cleanly at exact 4-digit level.
+  - Using 3-digit prefixes keeps coverage stable and comparable over time.
+- New fallback now deployed in all harmonization do-files:
+  - if 3-digit mapping is missing, code falls back to the 2-digit SCIAN prefix to populate `industrycat10`.
+  - example: `6132 -> 61 -> industrycat10 = 10 (Other Services, Unspecified)`.
+  - this fallback applies to both primary (`industrycat10`) and secondary (`industrycat10_2`) jobs.
+- Important scope:
+  - 2-digit fallback assigns broad 1-digit industry groups only;
+  - `industrycat_isic` still depends on successful 3-digit SCIAN->ISIC mapping.
+
+### Labor Concept Mapping Hardening (8 Consecutive Quarters)
+- We applied a dedicated pass over `2024Q1` to `2025Q4` harmonization do-files to align labor concepts with questionnaire mode.
+- Rule now enforced in code:
+  - expanded module (`p3j` present): `contract <- p3j`, `union <- p3i`, and `healthins/socialsec <- p3m5/p3m4`;
+  - basic module (`p3j` absent): `contract <- p3i`, and union/benefit variables are generated as missing.
+- Implementation is variable-driven (`cap confirm variable`) rather than quarter-hardcoded, making future rounds safer when INEGI changes instrument structure.
+- Labor cleanup now includes existence guards before replacement, preventing `r(111)` failures on missing module-specific variables.
+- Rollout status: same logic propagated for all available rounds from `2005Q1` to `2025Q3` (excluding missing-source quarter `2020Q2` for metadata audit).
+- Metadata audit artifact (labels + presence by quarter): `Do-files/quarterly_agent/state/audits/labor_metadata_2005Q1_2025Q3_v2.csv`.
+
 ### Phase 4: Schema Diff Intelligence
 - Script: `phase4_schema_diff.py`
 - Compares schema directly from ZIPs for any selected base/target pair.

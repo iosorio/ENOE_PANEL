@@ -10,6 +10,7 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 - [Optional parallel run](#optional-parallel-run)
 - [Inputs and outputs](#inputs-and-outputs)
 - [Instrument differences to be aware of](#instrument-differences-to-be-aware-of)
+- [SCIAN 4D vs 3D vs 2D crosswalk logic](#scian-4d-vs-3d-vs-2d-crosswalk-logic)
 - [Logging and reproducibility](#logging-and-reproducibility)
 - [Harmonization consistency review (2026-01-08)](#harmonization-consistency-review-2026-01-08)
 - [Contributing](#contributing)
@@ -199,6 +200,33 @@ Outputs
 - **Geographic codes**: Starting 2025.Q3 INEGI renamed `ent` -> `cve_ent` (and similarly `mun`/`loc`). 2025.Q3 harmonization normalizes these after `rename *, lower;` so folios/subnat IDs remain consistent.
 - **Weights/strata**: Some quarters use `fac_np`/`est_d`, others `fac`/`est_d_tri`. If you see missing-variable errors on weights/strata, mirror the defensive pattern used elsewhere.
 - **Missing quarter**: 2020.Q2 is absent (COVID-19); the pipeline skips counter 62.
+
+## SCIAN 4D vs 3D vs 2D crosswalk logic
+- ENOE source variables `p4a` (main job) and `p7c` (second job) are 4-digit national industry codes.
+- From 2023.Q1 onward, ENOE metadata documents the national classifier as **SCIAN Hogares 2018**.
+- Two crosswalk granularities exist conceptually:
+  - `4-digit` matching (`SCIAN_18_ISIC_4`): exact `SCIAN4 -> ISIC` mapping.
+  - `3-digit` matching (`SCIAN_18_3D_ISIC_4`): map on first 3 digits (`SCIAN3 -> ISIC`).
+- Current harmonization policy in all quarterly do-files uses **3-digit matching** for ENOE because many observed ENOE codes are aggregate/unspecified at the 4th digit (or use addendum endings), which reduces exact 4-digit coverage.
+- Quarter do-file logic:
+  - Prefer `Data/Stata/SCIAN_18_3D_ISIC_4.dta` when available.
+  - Fallback to `Data/Stata/SCIAN_07_3D_ISIC_4.dta` for backward compatibility.
+- If a code is still unresolved after 3-digit merge, a **2-digit SCIAN fallback** is applied to assign `industrycat10`/`industrycat10_2` only.
+- 2-digit fallback mapping:
+  - `11 -> 1` (Agriculture)
+  - `21 -> 2` (Mining)
+  - `22 -> 4` (Public utilities)
+  - `23 -> 5` (Construction)
+  - `31/32/33 -> 3` (Manufacturing)
+  - `43/46/72 -> 6` (Commerce)
+  - `48/49/51 -> 7` (Transport and Communications)
+  - `52/53/54/55/56 -> 8` (Financial and Business Services)
+  - `93 -> 9` (Public Administration)
+  - `61/62/71/81/97/98/99 -> 10` (Other Services, Unspecified)
+- Practical implication:
+  - If a code like `6132` appears, harmonization first attempts prefix `613` via 3-digit crosswalk.
+  - If `613` is absent, fallback uses `61`, so `industrycat10` is still assigned.
+  - `industrycat_isic` may remain missing when no 3-digit SCIAN->ISIC mapping exists.
 
 ## Logging and reproducibility
 - Each step writes a log to `Do-files/Logs/`.

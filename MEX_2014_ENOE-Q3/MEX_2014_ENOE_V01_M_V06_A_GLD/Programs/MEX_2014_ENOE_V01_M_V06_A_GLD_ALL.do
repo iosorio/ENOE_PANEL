@@ -1207,6 +1207,20 @@ foreach v of local ed_var {
 	replace industrycat10_helper=8 if industrycat10=="64" | industrycat10=="65" | industrycat10=="66" | industrycat10=="68" | industrycat10=="69"| industrycat10=="70" | industrycat10=="71" | industrycat10=="72" | industrycat10=="73" | industrycat10=="74" | industrycat10=="75" | industrycat10=="77" | industrycat10=="78" | industrycat10=="79" | industrycat10=="80" | industrycat10=="81" | industrycat10=="82"
 	replace industrycat10_helper=9 if industrycat10=="84"
 	replace industrycat10_helper=10 if industrycat10=="85" | industrycat10=="86" | industrycat10=="87" | industrycat10=="88" | industrycat10=="90" | industrycat10=="91" | industrycat10=="92" | industrycat10=="93" | industrycat10=="94" | industrycat10=="95" | industrycat10=="96" | industrycat10=="97" | industrycat10=="98" | industrycat10=="99"
+* SCIAN 2-digit fallback for codes not covered by 4d/3d SCIAN->ISIC concordance.
+* Example: 6132 -> 61 (Servicios educativos) -> Other Services.
+gen str2 industry_scian2 = substr(string(industry_orig,"%04.0f"),1,2)
+replace industrycat10_helper=1 if missing(industrycat10_helper) & industry_scian2=="11"
+replace industrycat10_helper=2 if missing(industrycat10_helper) & industry_scian2=="21"
+replace industrycat10_helper=4 if missing(industrycat10_helper) & industry_scian2=="22"
+replace industrycat10_helper=5 if missing(industrycat10_helper) & industry_scian2=="23"
+replace industrycat10_helper=3 if missing(industrycat10_helper) & (industry_scian2=="31" | industry_scian2=="32" | industry_scian2=="33")
+replace industrycat10_helper=6 if missing(industrycat10_helper) & (industry_scian2=="43" | industry_scian2=="46" | industry_scian2=="72")
+replace industrycat10_helper=7 if missing(industrycat10_helper) & (industry_scian2=="48" | industry_scian2=="49" | industry_scian2=="51")
+replace industrycat10_helper=8 if missing(industrycat10_helper) & (industry_scian2=="52" | industry_scian2=="53" | industry_scian2=="54" | industry_scian2=="55" | industry_scian2=="56")
+replace industrycat10_helper=9 if missing(industrycat10_helper) & industry_scian2=="93"
+replace industrycat10_helper=10 if missing(industrycat10_helper) & (industry_scian2=="61" | industry_scian2=="62" | industry_scian2=="71" | industry_scian2=="81" | industry_scian2=="97" | industry_scian2=="98" | industry_scian2=="99")
+drop industry_scian2
 	replace industrycat10_helper=. if lstatus!=1
 	drop industrycat10
 	rename industrycat10_helper industrycat10
@@ -1365,7 +1379,15 @@ The restrictions below could be completed with the following, yet these are not 
 
 
 *<_contract_>
-	gen byte contract=p3i
+	cap confirm variable p3j
+	if _rc == 0 {
+		* Expanded questionnaire (typically Q1): contract is asked in p3j.
+		gen byte contract = p3j
+	}
+	else {
+		* Basic questionnaire (typically Q2-Q4): contract is asked in p3i.
+		gen byte contract = p3i
+	}
 	recode contract 2=0 9=.
 	replace contract=. if lstatus!=1
 	label var contract "Employment has contract primary job 7 day recall"
@@ -1374,9 +1396,16 @@ The restrictions below could be completed with the following, yet these are not 
 *</_contract_>
 
 
-/*<_healthins_> Does not have this question for Q3 of this year
-	gen byte healthins = 1 if p3m5 == 5
-	recode healthins .=0
+*<_healthins_>
+	cap confirm variable p3m5
+	if _rc == 0 {
+		* Expanded questionnaire benefit module.
+		gen byte healthins = 1 if p3m5 == 5
+		recode healthins .=0
+	}
+	else {
+		gen byte healthins = .
+	}
 	replace healthins=. if lstatus!=1
 	label var healthins "Employment has health insurance primary job 7 day recall"
 	la de lblhealthins 0 "Without health insurance" 1 "With health insurance"
@@ -1385,8 +1414,15 @@ The restrictions below could be completed with the following, yet these are not 
 
 
 *<_socialsec_>
-	gen byte socialsec = 1 if p3m4 ==4
-	recode socialsec .=0
+	cap confirm variable p3m4
+	if _rc == 0 {
+		* Expanded questionnaire benefit module.
+		gen byte socialsec = 1 if p3m4 ==4
+		recode socialsec .=0
+	}
+	else {
+		gen byte socialsec = .
+	}
 	replace socialsec=. if lstatus!=1
 	label var socialsec "Employment has social security insurance primary job 7 day recall"
 	la de lblsocialsec 1 "With social security" 0 "Without social secturity"
@@ -1394,15 +1430,23 @@ The restrictions below could be completed with the following, yet these are not 
 *</_socialsec_>
 
 
-*<_union_> Does not have this question for Q3 for this year
-	gen byte union = 1 if p3i == 1
-	replace union = 0 if p3i == 2
-	replace union =. if p3i == 3
+*<_union_>
+	cap confirm variable p3j
+	if _rc == 0 {
+		* Expanded questionnaire (typically Q1): union question is asked in p3i.
+		gen byte union = 1 if p3i == 1
+		replace union = 0 if p3i == 2
+		replace union =. if p3i == 3
+	}
+	else {
+		* Basic questionnaire has no union item.
+		gen byte union = .
+	}
 	replace union=. if lstatus!=1
 	label var union "Union membership at primary job 7 day recall"
 	la de lblunion 0 "Not union member" 1 "Union member"
 	label values union lblunion
-*</_union_>*/
+*</_union_>
 
 
 *<_firmsize_l_>
@@ -1529,6 +1573,19 @@ gen industrycat_isic_2=isic_2
 	replace industrycat10_2_helper=8 if industrycat10_2=="64" | industrycat10_2=="65" | industrycat10_2=="66" | industrycat10_2=="68" | industrycat10_2=="69"| industrycat10_2=="70" | industrycat10_2=="71" | industrycat10_2=="72" | industrycat10_2=="73" | industrycat10_2=="74" | industrycat10_2=="75" | industrycat10_2=="77" | industrycat10_2=="78" | industrycat10_2=="79" | industrycat10_2=="80" | industrycat10_2=="81" | industrycat10_2=="82"
 	replace industrycat10_2_helper=9 if industrycat10_2=="84"
 	replace industrycat10_2_helper=10 if industrycat10_2=="85" | industrycat10_2=="86" | industrycat10_2=="87" | industrycat10_2=="88" | industrycat10_2=="90" | industrycat10_2=="91" | industrycat10_2=="92" | industrycat10_2=="93" | industrycat10_2=="94" | industrycat10_2=="95" | industrycat10_2=="96" | industrycat10_2=="97" | industrycat10_2=="98" | industrycat10_2=="99"
+* SCIAN 2-digit fallback for secondary job.
+gen str2 industry_scian2_2 = substr(string(industry_orig_2,"%04.0f"),1,2)
+replace industrycat10_2_helper=1 if missing(industrycat10_2_helper) & industry_scian2_2=="11"
+replace industrycat10_2_helper=2 if missing(industrycat10_2_helper) & industry_scian2_2=="21"
+replace industrycat10_2_helper=4 if missing(industrycat10_2_helper) & industry_scian2_2=="22"
+replace industrycat10_2_helper=5 if missing(industrycat10_2_helper) & industry_scian2_2=="23"
+replace industrycat10_2_helper=3 if missing(industrycat10_2_helper) & (industry_scian2_2=="31" | industry_scian2_2=="32" | industry_scian2_2=="33")
+replace industrycat10_2_helper=6 if missing(industrycat10_2_helper) & (industry_scian2_2=="43" | industry_scian2_2=="46" | industry_scian2_2=="72")
+replace industrycat10_2_helper=7 if missing(industrycat10_2_helper) & (industry_scian2_2=="48" | industry_scian2_2=="49" | industry_scian2_2=="51")
+replace industrycat10_2_helper=8 if missing(industrycat10_2_helper) & (industry_scian2_2=="52" | industry_scian2_2=="53" | industry_scian2_2=="54" | industry_scian2_2=="55" | industry_scian2_2=="56")
+replace industrycat10_2_helper=9 if missing(industrycat10_2_helper) & industry_scian2_2=="93"
+replace industrycat10_2_helper=10 if missing(industrycat10_2_helper) & (industry_scian2_2=="61" | industry_scian2_2=="62" | industry_scian2_2=="71" | industry_scian2_2=="81" | industry_scian2_2=="97" | industry_scian2_2=="98" | industry_scian2_2=="99")
+drop industry_scian2_2
 	replace industrycat10_2_helper=. if lstatus!=1
 	drop industrycat10_2
 	rename industrycat10_2_helper industrycat10_2
@@ -2182,12 +2239,15 @@ replace firmsize_l_2 = 1 if empstat_2 == 4
 	local lab_var "minlaborage lstatus nlfreason unempldur_l unempldur_u empstat ocusec industry_orig industrycat_isic industrycat10 industrycat4 occup_orig occup_isco occup_skill occup wage_no_compen unitwage whours wmonths wage_total contract healthins socialsec union firmsize_l firmsize_u empstat_2 ocusec_2 industry_orig_2 industrycat_isic_2 industrycat10_2 industrycat4_2 occup_orig_2 occup_isco_2 occup_skill_2 occup_2 wage_no_compen_2 unitwage_2 whours_2 wmonths_2 wage_total_2 firmsize_l_2 firmsize_u_2 t_hours_others t_wage_nocompen_others t_wage_others t_hours_total t_wage_nocompen_total t_wage_total lstatus_year nlfreason_year unempldur_l_year unempldur_u_year empstat_year ocusec_year industry_orig_year industrycat_isic_year industrycat10_year industrycat4_year occup_orig_year occup_isco_year occup_skill_year occup_year unitwage_year whours_year wmonths_year wage_total_year contract_year healthins_year socialsec_year union_year firmsize_l_year firmsize_u_year empstat_2_year ocusec_2_year industry_orig_2_year industrycat_isic_2_year industrycat10_2_year industrycat4_2_year occup_orig_2_year occup_isco_2_year occup_skill_2_year occup_2_year wage_no_compen_2_year unitwage_2_year whours_2_year wmonths_2_year wage_total_2_year firmsize_l_2_year firmsize_u_2_year t_hours_others_year t_wage_nocompen_others_year t_wage_others_year t_hours_total_year t_wage_nocompen_total_year t_wage_total_year njobs t_hours_annual linc_nc laborincome"
 
 	foreach v of local lab_var {
-		cap confirm numeric variable `v'
-		if _rc == 0 { // is indeed numeric
-			replace `v'=. if ( age < minlaborage & !missing(age) )
-		}
-		else { // is not
-			replace `v'= "" if ( age < minlaborage & !missing(age) )
+		cap confirm variable `v'
+		if _rc == 0 {
+			cap confirm numeric variable `v'
+			if _rc == 0 { // is indeed numeric
+				replace `v'=. if ( age < minlaborage & !missing(age) )
+			}
+			else { // is string
+				replace `v'= "" if ( age < minlaborage & !missing(age) )
+			}
 		}
 
 	}
