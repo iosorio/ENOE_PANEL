@@ -1,9 +1,11 @@
 # ENOE_PANEL usage guide
 
-This guide summarizes how to run the ENOE harmonization and panel construction for 2005–2025 and highlights key instrument differences.
+This guide summarizes how to run ENOE harmonization/panel construction with two supported flows:
+- `Flow A`: Python + Stata orchestration.
+- `Flow B`: Stata-only execution.
 
 ## 1) Configure paths
-- Edit `Do-files/00 Master.do`:
+- Edit `Do-files/00_Master.do`:
   - Set the `$path` global to your ENOE root. Use forward slashes on macOS/Linux.
   - Ensure any per-user blocks match your username/hostname if used.
 - The GLD folder layout must follow the pattern:
@@ -11,22 +13,46 @@ This guide summarizes how to run the ENOE harmonization and panel construction f
   - `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_V01_M/Data/Stata`
   - `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_V01_M/Programs`
 
-## 2) Run the main pipeline
+## 2) Flow A (Python + Stata)
+Run from repository root:
+```bash
+python3 Do-files/quarterly_agent/run_quarterly_agent.py \
+  --years 2025 \
+  --target-year 2025 \
+  --target-quarter 3 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp \
+  --always-run-pipeline
+```
+
+This flow executes:
+1. phase 1 detection/download (if enabled),
+2. phase 1B poverty-line sync,
+3. schema checks (`prev` and `yoy`),
+4. phase 2 Stata pipeline (harmonization + append + panel, optional QC).
+
+## 3) Flow B (Stata-only)
 In Stata (16+):
 ```stata
-do "Do-files/00 Master.do"
+do "Do-files/00_Master.do"
 ```
-Steps executed:
-1. `01_ENOE_Harmonization.do` — runs each quarter’s GLD program (skips 2020.Q2).
-2. `02_Append_ENOE_Surveys.do` — appends harmonized quarters, builds panel IDs/flags.
-3. `03_Construct_panel_of_workers.do` — builds the balanced rotating panel.
+Notes:
+1. `00_Master.do` is the entrypoint for Stata-only users.
+2. Ensure step 2 and step 3 are uncommented in `00_Master.do` if full sample and panel construction are required.
+3. Core scripts:
+   - `01_ENOE_Harmonization.do`
+   - `02_Append_ENOE_Surveys.do`
+   - `03_Construct_panel_of_workers.do`
 
 Logs are written to `Do-files/Logs/`.
 
-## 3) Optional parallel run
-- `PANEL/DO/00_Process_ENOE_quarterly_data.do` and `01_Append_ENOE_quarterly_data.do` can spawn batch do-files per year and execute via `myscript.sh` (macOS) or `.bat` (Windows). Use only if paths/users are adapted to your machine.
+## 4) Parallel options
+- Python+Stata parallel rebuild:
+  - `Do-files/quarterly_agent/phase2_rebuild_range_parallel.py`
+- Stata Q-check parallel (optional):
+  - `Do-files/Quality_Checks/00_Run_All_Parallel.do`
 
-## 4) Instrument differences (handle defensively)
+## 5) Instrument differences (handle defensively)
 - **Working hours**: Older instruments use `p5c_thrs`/`p5e_thrs`; newer use `p5b_thrs`/`p5d_thrs`.
 - **Months worked**: Older use `p5g*`; newer use `p5f*`.
 - **Firm size (primary job)**: Q1 uses `p3q`; Q2–Q4 use `p3l`.
@@ -41,7 +67,7 @@ Logs are written to `Do-files/Logs/`.
 - **Weights/strata**: Some quarters use `fac_np`/`est_d`, others `fac`/`est_d_tri`. Add `cap confirm var` fallbacks if missing.
 - **Missing quarter**: 2020.Q2 is absent and is skipped by counter logic.
 
-## 5) Crosswalk scripts
+## 6) Crosswalk scripts
 Canonical crosswalk scripts live in `Doc/Source_Packages/programs/`. Set `ENOE_DOCS` to the folder containing:
 - `SCIAN_18_ISIC_4.xlsx`
 - `SCIAN_07_ISIC_4.xlsx`
@@ -59,10 +85,10 @@ Crosswalk granularity used in harmonization:
   - if `abc` is missing in the selected crosswalk, harmonization falls back to prefix `ab` to assign `industrycat10` (and `industrycat10_2`) only;
   - `industrycat_isic` can still remain missing when no 3-digit SCIAN->ISIC mapping exists.
 
-## 6) Shared Stata helpers
+## 7) Shared Stata helpers
 - `Do-files/ent_mun_label.do` is now the shared helper for subnational labels. Harmonization scripts set `path_in_do` to `\`server'/Do-files`.
 
-## 7) Quality checks
+## 8) Quality checks
 - Canonical GLD Q-checks live in `Do-files/Quality_Checks/`.
 - Sequential runner: `Do-files/Quality_Checks/00_Run_All_Sequential.do`
 - Parallel runner (optional): `Do-files/Quality_Checks/00_Run_All_Parallel.do`
@@ -74,7 +100,7 @@ Crosswalk granularity used in harmonization:
     - `python Do-files/quality_checks_py/qcheck_harmonization.py --batch --start-year 2005 --end-year 2025 --reports static,basic,categoric --profile full`
   - Outputs are written to `Output/Quality_Checks_Py/by-year/YYYY/QX/`.
 
-## 8) Outputs
+## 9) Outputs
 - Harmonized quarterly `.dta` in each quarter’s `Data/Harmonized/`.
 - Appended full sample (parameterized): `PANEL/DATA/MEX_<start>_<end>Q<q>_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`.
 - Balanced panel (parameterized): `PANEL/DATA/MEX_<start>_<end>Q<q>_PANEL_QUARTER.dta`.
@@ -84,9 +110,16 @@ Crosswalk granularity used in harmonization:
 - Current full-window example (this project): `MEX_2005_2025Q3_*`.
 - Excel outputs are not produced by the current pipeline.
 
-## 9) Troubleshooting
+## 10) Troubleshooting
 - Missing variable errors (e.g., `p5b_thrs`, `p5f1`, `ent`): add `cap confirm var` branches and normalize names early.
-- Path errors: confirm `$path` in `00 Master.do` and folder layout.
+- Path errors: confirm `$path` in `00_Master.do` and folder layout.
 - 2020.Q2 absence: expected; the pipeline skips counter 62.
 - Quarterly agent parallel rebuild now marks 2020.Q2 as `skipped` (expected), not `failed`.
 - Phase-2 wrapper now treats Stata runtime codes (`r(<code>)`) in logs as failures even when process return code is zero.
+
+## 11) Archived legacy files
+Deprecated and generated clutter was moved non-destructively to:
+- `archive_legacy/20260302_094547_dualflow_cleanup/`
+
+Manifest:
+- `archive_legacy/20260302_094547_dualflow_cleanup/move_manifest.txt`

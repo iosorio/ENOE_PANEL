@@ -5,23 +5,26 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 ## Contents
 - [Repository layout](#repository-layout)
 - [Prerequisites](#prerequisites)
-- [Quick start](#quick-start)
-- [Quarterly agent automation (phases 1-4)](#quarterly-agent-automation-phases-1-4)
+- [Supported flows](#supported-flows)
+- [Flow A: Python+Stata (recommended)](#flow-a-pythonstata-recommended)
+- [Flow B: Stata-only](#flow-b-stata-only)
+- [Quarterly agent automation (phases 1-4)](#quarterly-agent-automation-phases-1-4--poverty-sync)
 - [Optional parallel run](#optional-parallel-run)
 - [Inputs and outputs](#inputs-and-outputs)
 - [Instrument differences to be aware of](#instrument-differences-to-be-aware-of)
 - [SCIAN 4D vs 3D vs 2D crosswalk logic](#scian-4d-vs-3d-vs-2d-crosswalk-logic)
 - [Logging and reproducibility](#logging-and-reproducibility)
+- [Archived legacy files](#archived-legacy-files-2026-03-02)
 - [Harmonization consistency review (2026-01-08)](#harmonization-consistency-review-2026-01-08)
 - [Contributing](#contributing)
 
 ## Repository layout
 - `Do-files/` — main Stata pipeline:
-  - `00 Master.do` orchestrates the full run.
+  - `00_Master.do` is the Stata-only entrypoint.
   - `01_ENOE_Harmonization.do` executes GLD harmonization for each quarter.
   - `02_Append_ENOE_Surveys.do` appends all harmonized quarters, builds panel IDs/flags.
   - `03_Construct_panel_of_workers.do` builds the balanced rotating panel.
-  - Label helpers: `ent_mun_label.do`, `lblc_mnpio.do`.
+  - Label helper in active use: `ent_mun_label.do`.
 - `Do-files/quarterly_agent/` — quarterly automation scripts:
   - `phase1_detect_download.py` detects/releases and downloads ENOE ZIPs.
   - `phase1b_sync_poverty_lines.py` syncs INEGI poverty lines and patches the target harmonization do-file.
@@ -41,20 +44,51 @@ Harmonization and panel construction scripts for Mexico’s ENOE (Encuesta Nacio
 - `Do-files/quality_checks_py/` — Python qcheck-style quality checks (`static`, `basic`, `categoric`) with batch support.
 - `Output/Quality_Checks/` — generated quality-check outputs by year/quarter.
 - `Output/Quality_Checks_Py/` — generated outputs from the Python qcheck-style runner.
+- `archive_legacy/` — non-destructive archive for deprecated scripts and generated temp wrappers.
 
 ## Prerequisites
 - Stata 16 or newer (tested with Stata MP).
 - Sufficient disk for raw ENOE microdata and harmonized outputs.
 - Local copies of the ENOE raw/Stata files organized per GLD expectations.
 
-## Quick start
-1) Set the base path in `Do-files/00 Master.do` (and any per-user path logic) to your local ENOE data root. Use forward slashes on macOS/Linux.
-2) Run from Stata: `do "Do-files/00 Master.do"`.
+## Supported flows
+Two execution flows are supported and kept in parallel:
+- `Flow A (Python+Stata)`: orchestration, schema checks, poverty-line sync, and pipeline execution via Python wrappers plus Stata.
+- `Flow B (Stata-only)`: direct Stata execution from `Do-files/00_Master.do` and canonical Stata Q-check scripts.
 
-This will:
-- Harmonize each quarter (except 2020.Q2, which is missing).
-- Append and construct panel flags/IDs.
-- Build the balanced rotating panel.
+## Flow A: Python+Stata (recommended)
+Run from repository root:
+
+```bash
+python3 Do-files/quarterly_agent/run_quarterly_agent.py \
+  --years 2025 \
+  --target-year 2025 \
+  --target-quarter 3 \
+  --panel-start-year 2005 \
+  --stata-bin stata-mp \
+  --always-run-pipeline
+```
+
+This flow covers:
+- quarter detection/download,
+- poverty-line sync,
+- scaffold/schema checks,
+- harmonization + append + panel (+ optional QC).
+
+## Flow B: Stata-only
+1) Set path in `Do-files/00_Master.do`.
+2) In `Do-files/00_Master.do`, ensure step 2 and step 3 are uncommented if you want full sample and panel outputs.
+3) Run in Stata:
+
+```stata
+do "Do-files/00_Master.do"
+```
+
+For Q-checks in Stata-only mode:
+
+```stata
+do "Do-files/Quality_Checks/00_Run_All_Sequential.do"
+```
 
 ## Quarterly agent automation (phases 1-4 + poverty sync)
 Run from repository root:
@@ -241,6 +275,19 @@ Outputs
 - Harmonization scripts now set `path_in_do` to `\`server'/Do-files` for `ent_mun_label.do`.
 - `sample_size_audit.csv` records HH/IND sample sizes computed from raw SDEMT inputs (HH = distinct `folioh`, IND = row count after `r_def==0` and `c_res in {1,3}`); updated 2026-01-08.
 - `Do-files/sample_size_audit/sample_size_audit.py` recomputes those sample sizes from raw SDEMT and can update the tags: `python Do-files/sample_size_audit/sample_size_audit.py --update`.
+
+## Archived legacy files (2026-03-02)
+To reduce clutter while keeping backward traceability, deprecated/temporary artifacts were moved (not deleted) to:
+- `archive_legacy/20260302_094547_dualflow_cleanup/`
+
+Manifest of all moved files:
+- `archive_legacy/20260302_094547_dualflow_cleanup/move_manifest.txt`
+
+Archived set includes:
+- legacy `DO/` scripts,
+- deprecated `Do-files/lblc_mnpio.do`,
+- generated wrappers `Do-files/quarterly_agent/state/runs/tmp_*.do`,
+- generated QC launcher `Do-files/Quality_Checks/batch/myscript.sh`.
 
 ## Harmonization consistency review (2026-01-08)
 - Reviewed 82 `MEX_*_ENOE_V01_M_V06_A_GLD_ALL.do` files for metadata consistency.

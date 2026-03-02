@@ -30,10 +30,10 @@ etime, start
 	do "Do-files/01_ENOE_Harmonization.do"
 
 * Step 2. Append surveys
-	*do "Do-files/02_Append_ENOE_Surveys.do"
+	do "Do-files/02_Append_ENOE_Surveys.do"
 
 * Step 3. Construct panel of workers
-	*do "Do-files/03_Construct_panel_of_workers.do"
+	do "Do-files/03_Construct_panel_of_workers.do"
 			
 ********************************************************************************
 * End of 00 Master.do

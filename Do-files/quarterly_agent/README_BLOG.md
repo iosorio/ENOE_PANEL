@@ -10,6 +10,11 @@ Hope nothing changed in the schema.
 
 This folder now contains an agent workflow that automates that process with traceable runs and explicit diagnostics.
 
+Scope note:
+- This document describes the `Python+Stata` flow (agent-driven).
+- The repository also keeps a `Stata-only` flow via `Do-files/00_Master.do`.
+- Consolidated dual-flow guidance is in `ENOE_PANEL/README.md` and `Doc/USAGE.md`.
+
 ## What We Have Successfully Built
 
 ### Phase 1: INEGI Detection + Download
