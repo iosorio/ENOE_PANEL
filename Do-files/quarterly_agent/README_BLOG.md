@@ -14,6 +14,7 @@ Scope note:
 - This document describes the `Python+Stata` flow (agent-driven).
 - The repository also keeps a `Stata-only` flow via `Do-files/00_Master.do`.
 - Consolidated dual-flow guidance is in `ENOE_PANEL/README.md` and `Doc/USAGE.md`.
+- Companion guide (Blog Entry 2): `Do-files/quarterly_agent/README_BLOG_02_GUIDE.md`.
 
 ## What We Have Successfully Built
 
