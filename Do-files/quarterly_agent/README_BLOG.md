@@ -173,7 +173,7 @@ It is now an auditable workflow with:
 ## Current Status
 
 The end-to-end `2025 Q3` pipeline has been successfully executed multiple times with the updated dynamic naming and produced:
-- `MEX_2005_2025Q3_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`
+- `MEX_2005_2025Q3_ENOE_V01_M_V07_A_GLD_FULLSAMPLE.dta`
 - `MEX_2005_2025Q3_PANEL_QUARTER.dta`
 - `*_latest.dta` aliases
 
@@ -187,18 +187,29 @@ The repo now documents and enforces the World Bank GLD-style version convention:
 - `2005`: survey year
 - `ENOE`: survey name
 - `V01_M`: raw/master version
-- `V06_A`: harmonization version
+- `V07_A`: active local harmonization version
 - `GLD`: harmonization acronym
 
 Example:
 
-- `MEX_2005_ENOE_V01_M_V06_A_GLD`
+- `MEX_2005_ENOE_V01_M_V07_A_GLD`
 
 Operational policy:
 
 1. If INEGI republishes the raw microdata, bump the raw/master version (`V01_M -> V02_M`).
 2. If the harmonization logic changes substantially, bump the harmonization version (`V06_A -> V07_A`).
-3. Keep the local active version and the upstream GLD comparison baseline separate when needed.
+3. For future releases, keep the previous harmonization tree and outputs intact, and scaffold the next harmonization version instead of renaming the old one away.
+4. Keep the local active version and the upstream GLD comparison baseline separate when needed. The current upstream comparison baseline remains `V06_A`.
+
+Future-safe promotion command:
+
+```bash
+python3 Do-files/quarterly_agent/bump_harmonization_version.py \
+  --from-harm-version V07 \
+  --to-harm-version V08
+```
+
+That command preserves `V07_A` for replication and prepares an empty `V08_A` harmonization layer for reruns.
 
 Source of truth:
 

@@ -89,14 +89,14 @@ Main outputs:
 `PANEL/DATA/MEX_ENOE_<harm_tag>_FULLSAMPLE_latest.dta`
 `PANEL/DATA/MEX_PANEL_QUARTER_latest.dta`
 
-`<harm_tag>` is manifest-driven. The current manifest is `V01_M_V06_A_GLD`, but the pipeline no longer hardcodes that suffix.
+`<harm_tag>` is manifest-driven. The current local manifest is `V01_M_V07_A_GLD`, and the pipeline no longer hardcodes that suffix.
 
 ## Versioning
 
 The repository now follows an explicit GLD-style versioning policy:
 
 - `V01_M`: raw/master microdata version
-- `V06_A`: harmonization template/version
+- `V07_A`: active local harmonization template/version
 - `GLD`: harmonization acronym
 
 Source of truth:
@@ -107,7 +107,22 @@ Rules:
 
 1. Bump the raw version only when INEGI republishes or changes the raw microdata package.
 2. Bump the harmonization version only when the harmonization logic changes enough to define a new reproducible release lineage.
-3. Keep the upstream GLD comparison baseline explicit, even if local harmonization moves ahead.
+   Future promotions should scaffold a new versioned harmonization tree and keep the previous versioned tree and outputs in place.
+3. Keep the upstream GLD comparison baseline explicit, even if local harmonization moves ahead. The current upstream comparison baseline remains `V06_A`.
+
+For future promotions, use:
+
+```bash
+python3 Do-files/quarterly_agent/bump_harmonization_version.py \
+  --from-harm-version V07 \
+  --to-harm-version V08
+```
+
+Default behavior is non-destructive:
+- keep `V07_A` folders and outputs intact
+- scaffold `V08_A` quarter harmonization folders
+- advance the manifest to `V08`
+- require a fresh rerun to generate `V08_A` harmonized and panel outputs
 
 Detailed guidance:
 

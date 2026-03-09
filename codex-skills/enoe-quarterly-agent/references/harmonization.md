@@ -15,6 +15,11 @@ Version suffixes come from:
 - `Do-files/00_ENOE_Versioning.do`
 - `Doc/VERSIONING.md`
 
+Current version context:
+- local harmonization lineage: `V07_A`
+- upstream World Bank GLD comparison baseline: `V06_A`
+- future harmonization promotions should preserve the prior version tree for reproducibility and scaffold the next one
+
 ## Education
 
 Key outputs:

@@ -84,6 +84,9 @@ Latest aliases:
 Version suffixes are manifest-driven:
 - source of truth: `Do-files/00_ENOE_Versioning.do`
 - detailed policy: `Doc/VERSIONING.md`
+- current local harmonization lineage: `V07_A`
+- current upstream comparison baseline: `V06_A`
+- future promotions should scaffold the next harmonization version and preserve the previous version tree and outputs
 
 ## Logs and state
 

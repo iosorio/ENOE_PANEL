@@ -30,7 +30,7 @@ python Do-files/quality_checks_py/qcheck_harmonization.py \
   --xlsx
 ```
 
-`<harm_tag>` comes from `Do-files/00_ENOE_Versioning.do`. The current manifest value is `V01_M_V06_A_GLD`.
+`<harm_tag>` comes from `Do-files/00_ENOE_Versioning.do`. The current local manifest value is `V01_M_V07_A_GLD`; the upstream GLD comparison baseline remains `V01_M_V06_A_GLD`.
 
 Run all available quarters (2005-2025):
 

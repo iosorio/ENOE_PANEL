@@ -38,7 +38,17 @@ Expected quarter folder layout:
 - `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_<raw_tag>/Programs`
 
 `<raw_tag>` and `<harm_tag>` are defined in `Do-files/00_ENOE_Versioning.do`.  
-The current manifest uses `V01_M` and `V01_M_V06_A_GLD`, but the pipeline now reads those values dynamically.
+The current local manifest uses `V01_M` and `V01_M_V07_A_GLD`, while the upstream GLD comparison baseline remains `V01_M_V06_A_GLD`.
+
+To prepare a future harmonization release without losing reproducibility for `V07_A`, use:
+
+```bash
+python3 Do-files/quarterly_agent/bump_harmonization_version.py \
+  --from-harm-version V07 \
+  --to-harm-version V08
+```
+
+That command preserves the `V07_A` tree and scaffolds a fresh `V08_A` harmonization layer for reruns.
 
 ## Flow A (Recommended): Python + Stata
 
