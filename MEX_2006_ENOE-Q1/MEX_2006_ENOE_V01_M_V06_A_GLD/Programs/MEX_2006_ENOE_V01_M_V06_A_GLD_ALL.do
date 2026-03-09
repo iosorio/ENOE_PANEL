@@ -5,7 +5,7 @@
 
 /* -----------------------------------------------------------------------
 
-<_Program name_>				[MEX_2006_ENOE_V01_M_V04_A_GLD_ALL.do] </_Program name_>
+<_Program name_>				[MEX_2006_ENOE_V01_M_V06_A_GLD_ALL.do] </_Program name_>
 <_Application_>					[STATA] <_Application_>
 <_Author(s)_>					[The World Bank Jobs Group] </_Author(s)_>
 <_Date created_>				2021-04-01 </_Date created_>

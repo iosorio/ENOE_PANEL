@@ -13,6 +13,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from versioning import (
+    ENOEVersionConfig,
+    harm_dir as cfg_harm_dir,
+    harm_program_path as cfg_harm_program_path,
+    load_version_config,
+    master_dir as cfg_master_dir,
+    quarter_root as cfg_quarter_root,
+    resolve_existing_harm_dir,
+    resolve_existing_master_dir,
+)
+
 
 @dataclass(frozen=True)
 class QuarterRef:
@@ -62,24 +73,20 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def quarter_root(repo_root: Path, ref: QuarterRef) -> Path:
-    return repo_root / f"MEX_{ref.year}_ENOE-Q{ref.quarter}"
+def quarter_root(repo_root: Path, cfg: ENOEVersionConfig, ref: QuarterRef) -> Path:
+    return cfg_quarter_root(repo_root, cfg, ref.year, ref.quarter)
 
 
-def master_dir(root: Path, year: int) -> Path:
-    return root / f"MEX_{year}_ENOE_V01_M"
+def master_dir(root: Path, cfg: ENOEVersionConfig, year: int) -> Path:
+    return cfg_master_dir(root, cfg, year)
 
 
-def harm_dir(root: Path, year: int) -> Path:
-    return root / f"MEX_{year}_ENOE_V01_M_V06_A_GLD"
+def harm_dir(root: Path, cfg: ENOEVersionConfig, year: int) -> Path:
+    return cfg_harm_dir(root, cfg, year)
 
 
-def harm_program_path(root: Path, year: int) -> Path:
-    return (
-        harm_dir(root, year)
-        / "Programs"
-        / f"MEX_{year}_ENOE_V01_M_V06_A_GLD_ALL.do"
-    )
+def harm_program_path(root: Path, cfg: ENOEVersionConfig, year: int) -> Path:
+    return cfg_harm_program_path(root, cfg, year)
 
 
 def list_existing_quarters(repo_root: Path) -> list[QuarterRef]:
@@ -129,7 +136,7 @@ def find_fallback_source(repo_root: Path, target: QuarterRef) -> QuarterRef | No
     return earlier[-1]
 
 
-def patch_harmonization_do(do_path: Path, target: QuarterRef) -> dict[str, int]:
+def patch_harmonization_do(do_path: Path, cfg: ENOEVersionConfig, target: QuarterRef) -> dict[str, int]:
     text = do_path.read_text(encoding="utf-8", errors="replace")
     replacements = 0
 
@@ -137,6 +144,10 @@ def patch_harmonization_do(do_path: Path, target: QuarterRef) -> dict[str, int]:
         return re.subn(pattern, repl, source, flags=re.MULTILINE)
 
     text, n = subn(r'local\s+year\s+"[0-9]{4}"', f'local year    "{target.year}"', text)
+    replacements += n
+    text, n = subn(r'local\s+vermast\s+"V[0-9]{2}"', f'local vermast "{cfg.raw_version}"', text)
+    replacements += n
+    text, n = subn(r'local\s+veralt\s+"V[0-9]{2}"', f'local veralt  "{cfg.harm_version}"', text)
     replacements += n
     text, n = subn(r'local\s+quarter\s+"Q[1-4]"', f'local quarter "Q{target.quarter}"', text)
     replacements += n
@@ -198,6 +209,7 @@ def clear_stata_quarter_files(stata_dir: Path) -> list[str]:
 def main() -> int:
     args = parse_args()
     repo_root = Path(args.repo_root).resolve()
+    cfg = load_version_config(repo_root)
     state_file = Path(args.state_file).resolve()
     state_out = Path(args.state_out).resolve()
 
@@ -228,8 +240,8 @@ def main() -> int:
         print("ERROR: could not determine source quarter.", file=sys.stderr)
         return 2
 
-    src_root = quarter_root(repo_root, source)
-    dst_root = quarter_root(repo_root, target)
+    src_root = quarter_root(repo_root, cfg, source)
+    dst_root = quarter_root(repo_root, cfg, target)
     if not src_root.exists():
         print(f"ERROR: source quarter does not exist: {src_root}", file=sys.stderr)
         return 2
@@ -257,27 +269,29 @@ def main() -> int:
     }
 
     if action == "scaffolded":
-        old_master = dst_root / f"MEX_{source.year}_ENOE_V01_M"
-        new_master = dst_root / f"MEX_{target.year}_ENOE_V01_M"
-        old_harm = dst_root / f"MEX_{source.year}_ENOE_V01_M_V06_A_GLD"
-        new_harm = dst_root / f"MEX_{target.year}_ENOE_V01_M_V06_A_GLD"
+        old_master = resolve_existing_master_dir(dst_root, cfg, source.year)
+        new_master = master_dir(dst_root, cfg, target.year)
+        old_harm = resolve_existing_harm_dir(dst_root, cfg, source.year)
+        new_harm = harm_dir(dst_root, cfg, target.year)
 
-        if old_master.exists() and old_master != new_master:
+        if old_master is not None and old_master.exists() and old_master != new_master:
             old_master.rename(new_master)
-        if old_harm.exists() and old_harm != new_harm:
+        if old_harm is not None and old_harm.exists() and old_harm != new_harm:
             old_harm.rename(new_harm)
 
         programs_dir = new_harm / "Programs"
-        old_do = programs_dir / f"MEX_{source.year}_ENOE_V01_M_V06_A_GLD_ALL.do"
-        new_do = programs_dir / f"MEX_{target.year}_ENOE_V01_M_V06_A_GLD_ALL.do"
-        if old_do.exists() and old_do != new_do:
-            old_do.rename(new_do)
+        new_do = harm_program_path(dst_root, cfg, target.year)
+        old_do_candidates = sorted(programs_dir.glob(f"{cfg.country}_{source.year}_{cfg.survey}_*_ALL.do"))
+        if old_do_candidates:
+            old_do = old_do_candidates[0]
+            if old_do != new_do:
+                old_do.rename(new_do)
 
         if not new_do.exists():
             print(f"ERROR: harmonization do-file not found: {new_do}", file=sys.stderr)
             return 2
 
-        patch_info = patch_harmonization_do(new_do, target)
+        patch_info = patch_harmonization_do(new_do, cfg, target)
         changes["patched_do"] = str(new_do)
         changes["patch_info"] = patch_info
 

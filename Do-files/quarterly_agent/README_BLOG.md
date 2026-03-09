@@ -59,11 +59,12 @@ Scope note:
 
 ### Future-Proof Output Naming (Implemented)
 - `02_Append_ENOE_Surveys.do` and `03_Construct_panel_of_workers.do` now use dynamic panel horizon tags:
-  - `MEX_<start>_<endYear>Q<endQ>_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`
+  - `MEX_<start>_<endYear>Q<endQ>_ENOE_<harm_tag>_FULLSAMPLE.dta`
   - `MEX_<start>_<endYear>Q<endQ>_PANEL_QUARTER.dta`
 - They also publish stable aliases:
-  - `MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta`
+  - `MEX_ENOE_<harm_tag>_FULLSAMPLE_latest.dta`
   - `MEX_PANEL_QUARTER_latest.dta`
+- `<harm_tag>` is driven by `Do-files/00_ENOE_Versioning.do`, not hardcoded in the append/panel scripts.
 
 ### Crosswalk Clarification: 4-Digit, 3-Digit, and 2-Digit SCIAN
 - ENOE industry source fields (`p4a`, `p7c`) are recorded as 4-digit national codes.
@@ -177,3 +178,40 @@ The end-to-end `2025 Q3` pipeline has been successfully executed multiple times 
 - `*_latest.dta` aliases
 
 The agent is ready for upcoming ENOE harmonization rounds with significantly lower operational risk.
+
+## Versioning Rule (Now Explicit)
+
+The repo now documents and enforces the World Bank GLD-style version convention:
+
+- `MEX`: country code
+- `2005`: survey year
+- `ENOE`: survey name
+- `V01_M`: raw/master version
+- `V06_A`: harmonization version
+- `GLD`: harmonization acronym
+
+Example:
+
+- `MEX_2005_ENOE_V01_M_V06_A_GLD`
+
+Operational policy:
+
+1. If INEGI republishes the raw microdata, bump the raw/master version (`V01_M -> V02_M`).
+2. If the harmonization logic changes substantially, bump the harmonization version (`V06_A -> V07_A`).
+3. Keep the local active version and the upstream GLD comparison baseline separate when needed.
+
+Source of truth:
+
+- `Do-files/00_ENOE_Versioning.do`
+- `Doc/VERSIONING.md`
+
+To compare local harmonization against upstream World Bank GLD:
+
+```bash
+python3 ENOE_PANEL/Do-files/quarterly_agent/compare_gld_harmonization.py \
+  --year 2025 \
+  --quarter 3 \
+  --fetch-upstream
+```
+
+This writes a patch artifact under `Do-files/quarterly_agent/state/upstream_diff/` that can be shared with GLD maintainers for code review.

@@ -16,6 +16,18 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from versioning import (
+    fullsample_latest_alias_path,
+    fullsample_output_path,
+    harm_output_path,
+    harm_program_path,
+    load_version_config,
+    master_dir,
+    panel_latest_alias_path,
+    panel_output_path,
+    quarter_root,
+)
+
 
 LICENSE_ERROR_PATTERNS = (
     r"\blicense\s+has\s+expired\b",
@@ -59,50 +71,12 @@ def quarter_suffix(year: int, quarter: int) -> str:
     return f"{quarter}{str(year)[2:]}"
 
 
-def quarter_root(repo_root: Path, year: int, quarter: int) -> Path:
-    return repo_root / f"MEX_{year}_ENOE-Q{quarter}"
-
-
-def master_dir(root: Path, year: int) -> Path:
-    return root / f"MEX_{year}_ENOE_V01_M"
-
-
-def harm_dir(root: Path, year: int) -> Path:
-    return root / f"MEX_{year}_ENOE_V01_M_V06_A_GLD"
-
-
-def harm_program_path(root: Path, year: int) -> Path:
-    return harm_dir(root, year) / "Programs" / f"MEX_{year}_ENOE_V01_M_V06_A_GLD_ALL.do"
-
-
-def harm_output_path(root: Path, year: int) -> Path:
-    return harm_dir(root, year) / "Data" / "Harmonized" / f"MEX_{year}_ENOE_V01_M_V06_A_GLD_ALL.dta"
-
-
 def state_run_dir(repo_root: Path) -> Path:
     return repo_root / "Do-files" / "quarterly_agent" / "state" / "runs"
 
 
 def panel_tag(start_year: int, end_year: int, end_quarter: int) -> str:
     return f"{start_year}_{end_year}Q{end_quarter}"
-
-
-def fullsample_output_path(repo_root: Path, start_year: int, end_year: int, end_quarter: int) -> Path:
-    tag = panel_tag(start_year, end_year, end_quarter)
-    return repo_root / "PANEL" / "DATA" / f"MEX_{tag}_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
-
-
-def fullsample_latest_alias_path(repo_root: Path) -> Path:
-    return repo_root / "PANEL" / "DATA" / "MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta"
-
-
-def panel_output_path(repo_root: Path, start_year: int, end_year: int, end_quarter: int) -> Path:
-    tag = panel_tag(start_year, end_year, end_quarter)
-    return repo_root / "PANEL" / "DATA" / f"MEX_{tag}_PANEL_QUARTER.dta"
-
-
-def panel_latest_alias_path(repo_root: Path) -> Path:
-    return repo_root / "PANEL" / "DATA" / "MEX_PANEL_QUARTER_latest.dta"
 
 
 def pipeline_globals(start_year: int, end_year: int, end_quarter: int) -> dict[str, str]:
@@ -329,17 +303,18 @@ def main() -> int:
         return 2
 
     repo_root = Path(args.repo_root).resolve()
+    cfg = load_version_config(repo_root)
     panel_tag_value = panel_tag(args.panel_start_year, args.year, args.quarter)
-    expected_fullsample = fullsample_output_path(repo_root, args.panel_start_year, args.year, args.quarter)
-    expected_fullsample_latest = fullsample_latest_alias_path(repo_root)
-    expected_panel = panel_output_path(repo_root, args.panel_start_year, args.year, args.quarter)
-    expected_panel_latest = panel_latest_alias_path(repo_root)
+    expected_fullsample = fullsample_output_path(repo_root, cfg, args.panel_start_year, args.year, args.quarter)
+    expected_fullsample_latest = fullsample_latest_alias_path(repo_root, cfg)
+    expected_panel = panel_output_path(repo_root, cfg, args.panel_start_year, args.year, args.quarter)
+    expected_panel_latest = panel_latest_alias_path(repo_root, cfg)
     do_globals = pipeline_globals(args.panel_start_year, args.year, args.quarter)
 
-    qroot = quarter_root(repo_root, args.year, args.quarter)
-    mdir = master_dir(qroot, args.year)
-    hprog = harm_program_path(qroot, args.year)
-    hout = harm_output_path(qroot, args.year)
+    qroot = quarter_root(repo_root, cfg, args.year, args.quarter)
+    mdir = master_dir(qroot, cfg, args.year)
+    hprog = harm_program_path(qroot, cfg, args.year)
+    hout = harm_output_path(qroot, cfg, args.year)
     orig_dir = mdir / "Data" / "Original"
     stata_dir = mdir / "Data" / "Stata"
 

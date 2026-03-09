@@ -17,6 +17,7 @@
 
 cd "$path"
 global thedo "$path/Do-files"
+do "$path/Do-files/00_ENOE_Versioning.do"
 cap log close master
 cap mkdir "$path/Logs"
 log using "Do-Files/Logs/Master.log", replace name(master)

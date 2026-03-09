@@ -3,6 +3,11 @@
 cap log close step02
 log using "Do-files/Logs/02_Append_ENOE_Surveys.log", replace name(step02)
 clear
+do "$path/Do-files/00_ENOE_Versioning.do"
+
+local country "$enoe_country"
+local survey "$enoe_survey"
+local harm_tag "$enoe_harm_tag"
 /*******************************************************************************
 * 02_Append_ENOE_Surveys.do
 *******************************************************************************/
@@ -60,8 +65,8 @@ clear
 	}
 
 	local panel_tag "`panel_start_year'_`panel_end_year'Q`panel_end_quarter'"
-	local fullsample_file "$path/PANEL/DATA/MEX_`panel_tag'_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
-	local fullsample_latest "$path/PANEL/DATA/MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta"
+	local fullsample_file "$path/PANEL/DATA/`country'_`panel_tag'_`survey'_`harm_tag'_FULLSAMPLE.dta"
+	local fullsample_latest "$path/PANEL/DATA/`country'_`survey'_`harm_tag'_FULLSAMPLE_latest.dta"
 	
 	#delimit ;
 	local myvars "weight strata int_month int_year cd_a ent con v_sel n_hog h_mud n_ren emp_ppal urban age 
@@ -80,7 +85,8 @@ clear
 				continue
 			}
 
-			local harm_file "$path/MEX_`yyyy'_ENOE-Q`qq'/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD_ALL.dta"
+			local survey_stem "`country'_`yyyy'_`survey'"
+			local harm_file "$path/`survey_stem'-Q`qq'/`survey_stem'_`harm_tag'/Data/Harmonized/`survey_stem'_`harm_tag'_ALL.dta"
 			cap confirm file "`harm_file'"
 			if _rc {
 				continue

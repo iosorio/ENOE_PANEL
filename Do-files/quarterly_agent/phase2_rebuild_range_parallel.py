@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from versioning import ENOEVersionConfig, fullsample_output_path, harm_output_path, load_version_config, panel_output_path, quarter_root
+
 
 @dataclass(frozen=True)
 class QuarterRef:
@@ -165,25 +167,8 @@ def enforce_onedrive_gate(
             }
 
 
-def harmonized_output_path(repo_root: Path, q: QuarterRef) -> Path:
-    return (
-        repo_root
-        / f"MEX_{q.year}_ENOE-Q{q.quarter}"
-        / f"MEX_{q.year}_ENOE_V01_M_V06_A_GLD"
-        / "Data"
-        / "Harmonized"
-        / f"MEX_{q.year}_ENOE_V01_M_V06_A_GLD_ALL.dta"
-    )
-
-
-def fullsample_output_path(repo_root: Path, start_year: int, end_year: int, end_quarter: int) -> Path:
-    tag = f"{start_year}_{end_year}Q{end_quarter}"
-    return repo_root / "PANEL" / "DATA" / f"MEX_{tag}_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
-
-
-def panel_output_path(repo_root: Path, start_year: int, end_year: int, end_quarter: int) -> Path:
-    tag = f"{start_year}_{end_year}Q{end_quarter}"
-    return repo_root / "PANEL" / "DATA" / f"MEX_{tag}_PANEL_QUARTER.dta"
+def harmonized_output_path(repo_root: Path, cfg: ENOEVersionConfig, q: QuarterRef) -> Path:
+    return harm_output_path(quarter_root(repo_root, cfg, q.year, q.quarter), cfg, q.year)
 
 
 def run_cmd(cmd: list[str], cwd: Path) -> dict[str, Any]:
@@ -207,13 +192,14 @@ def parse_summary_path(stdout_tail: str) -> str:
 
 def run_harmonization_job(
     repo_root: Path,
+    cfg: ENOEVersionConfig,
     phase2_script: Path,
     q: QuarterRef,
     args: argparse.Namespace,
 ) -> dict[str, Any]:
     missing_reason = KNOWN_MISSING_QUARTERS.get((q.year, q.quarter))
     if missing_reason:
-        expected = harmonized_output_path(repo_root, q)
+        expected = harmonized_output_path(repo_root, cfg, q)
         return {
             "quarter": {"year": q.year, "quarter": q.quarter, "label": q.label},
             "status": "skipped",
@@ -258,7 +244,7 @@ def run_harmonization_job(
     result["quarter"] = {"year": q.year, "quarter": q.quarter, "label": q.label}
     result["summary_path"] = parse_summary_path(result["stdout_tail"])
 
-    expected = harmonized_output_path(repo_root, q)
+    expected = harmonized_output_path(repo_root, cfg, q)
     result["harmonized_output"] = str(expected)
     result["harmonized_output_exists"] = expected.exists()
 
@@ -269,6 +255,7 @@ def run_harmonization_job(
 
 def run_finalize(
     repo_root: Path,
+    cfg: ENOEVersionConfig,
     phase2_script: Path,
     end_q: QuarterRef,
     args: argparse.Namespace,
@@ -301,8 +288,8 @@ def run_finalize(
     result = run_cmd(cmd, cwd=repo_root)
     result["summary_path"] = parse_summary_path(result["stdout_tail"])
 
-    expected_full = fullsample_output_path(repo_root, args.panel_start_year, end_q.year, end_q.quarter)
-    expected_panel = panel_output_path(repo_root, args.panel_start_year, end_q.year, end_q.quarter)
+    expected_full = fullsample_output_path(repo_root, cfg, args.panel_start_year, end_q.year, end_q.quarter)
+    expected_panel = panel_output_path(repo_root, cfg, args.panel_start_year, end_q.year, end_q.quarter)
     result["expected_fullsample"] = str(expected_full)
     result["expected_panel"] = str(expected_panel)
     result["fullsample_exists"] = expected_full.exists()
@@ -320,6 +307,7 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 def main() -> int:
     args = parse_args()
     repo_root = Path(args.repo_root).resolve()
+    cfg = load_version_config(repo_root)
     state_dir = Path(args.state_dir).resolve()
     ack_file = Path(args.onedrive_ack_file).resolve()
     phase2_script = Path(__file__).resolve().parent / "phase2_run_stata_pipeline.py"
@@ -391,7 +379,7 @@ def main() -> int:
     failed = False
     if args.workers == 1:
         for q in quarters:
-            result = run_harmonization_job(repo_root, phase2_script, q, args)
+            result = run_harmonization_job(repo_root, cfg, phase2_script, q, args)
             jobs.append(result)
             if result["status"] not in {"ok", "skipped"}:
                 failed = True
@@ -400,7 +388,7 @@ def main() -> int:
     else:
         with cf.ThreadPoolExecutor(max_workers=args.workers) as ex:
             future_map = {
-                ex.submit(run_harmonization_job, repo_root, phase2_script, q, args): q
+                ex.submit(run_harmonization_job, repo_root, cfg, phase2_script, q, args): q
                 for q in quarters
             }
             for fut in cf.as_completed(future_map):
@@ -430,7 +418,7 @@ def main() -> int:
             "reason": "harmonization_failures_present",
         }
     else:
-        final_res = run_finalize(repo_root, phase2_script, end, args)
+        final_res = run_finalize(repo_root, cfg, phase2_script, end, args)
         summary["steps"]["finalize"] = final_res
         if final_res["status"] != "ok":
             failed = True

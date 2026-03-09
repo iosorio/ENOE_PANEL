@@ -25,6 +25,12 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
+QUARTERLY_AGENT_DIR = Path(__file__).resolve().parents[1] / "quarterly_agent"
+if str(QUARTERLY_AGENT_DIR) not in sys.path:
+    sys.path.insert(0, str(QUARTERLY_AGENT_DIR))
+
+from versioning import harm_output_path, load_version_config, quarter_root, resolve_existing_harm_dir
+
 
 VALID_VERSION_VALUES = {
     "isco_1968",
@@ -1572,14 +1578,20 @@ def run_static_report(
 
 
 def find_dataset(repo_root: Path, year: int, quarter: int) -> Path:
-    return (
-        repo_root
-        / f"MEX_{year}_ENOE-Q{quarter}"
-        / f"MEX_{year}_ENOE_V01_M_V06_A_GLD"
-        / "Data"
-        / "Harmonized"
-        / f"MEX_{year}_ENOE_V01_M_V06_A_GLD_ALL.dta"
+    cfg = load_version_config(repo_root)
+    qroot = quarter_root(repo_root, cfg, year, quarter)
+    dataset = harm_output_path(qroot, cfg, year)
+    if dataset.exists():
+        return dataset
+
+    existing_harm_dir = resolve_existing_harm_dir(qroot, cfg, year)
+    if existing_harm_dir is None:
+        return dataset
+
+    candidates = sorted(
+        existing_harm_dir.joinpath("Data", "Harmonized").glob(f"{cfg.country}_{year}_{cfg.survey}_*_ALL.dta")
     )
+    return candidates[-1] if candidates else dataset
 
 
 def discover_datasets(

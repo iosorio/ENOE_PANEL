@@ -9,7 +9,11 @@ Start with:
 - `Doc/USAGE.md`
 
 For quarter-specific behavior, inspect:
-- `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_V01_M_V06_A_GLD/Programs/MEX_YYYY_ENOE_V01_M_V06_A_GLD_ALL.do`
+- `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_<harm_tag>/Programs/MEX_YYYY_ENOE_<harm_tag>_ALL.do`
+
+Version suffixes come from:
+- `Do-files/00_ENOE_Versioning.do`
+- `Doc/VERSIONING.md`
 
 ## Education
 
@@ -80,4 +84,3 @@ The pipeline runs two schema comparisons:
 - `yoy`: current quarter vs same quarter in the previous year
 
 When the user asks about a recent schema change, inspect the latest schema state files under `Do-files/quarterly_agent/state/schema/`.
-

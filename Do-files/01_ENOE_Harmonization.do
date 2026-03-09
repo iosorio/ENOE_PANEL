@@ -9,8 +9,13 @@ if c(username)=="israel"|c(username)=="Israel" {
 
 cd "$path"
 global thedo "$path/Do-files"
+do "$path/Do-files/00_ENOE_Versioning.do"
 cap mkdir "$thedo/batch"
 clear
+
+local country "$enoe_country"
+local survey "$enoe_survey"
+local harm_tag "$enoe_harm_tag"
 
 *===========================================================================
 * Parallel set-up
@@ -112,9 +117,10 @@ local parallel 	"yes"
 		local counter = (`yyyy'-2005)*4 + `q'
 		
                 if (`counter'>=1 & `counter'<=61) | (`counter'>=63 & `counter'<=83) {
-			quietly cd "$path/MEX_`yyyy'_ENOE-Q`q'/MEX_`yyyy'_ENOE_V01_M_V06_A_GLD/Programs/"
+			local survey_stem "`country'_`yyyy'_`survey'"
+			quietly cd "$path/`survey_stem'-Q`q'/`survey_stem'_`harm_tag'/Programs/"
 			noi di "`yyyy' `q' - counter: `counter'"
-			do "MEX_`yyyy'_ENOE_V01_M_V06_A_GLD_ALL.do"
+			do "`survey_stem'_`harm_tag'_ALL.do"
 		local cycle = `cycle'+1
 		}
 	}

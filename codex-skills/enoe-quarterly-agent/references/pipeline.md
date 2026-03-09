@@ -69,17 +69,21 @@ Also relevant:
 ## Outputs
 
 Quarter harmonized file:
-- `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_YYYY_ENOE_V01_M_V06_A_GLD_ALL.dta`
+- `MEX_YYYY_ENOE-QX/MEX_YYYY_ENOE_<harm_tag>/Data/Harmonized/MEX_YYYY_ENOE_<harm_tag>_ALL.dta`
 
 Full sample:
-- `PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`
+- `PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_ENOE_<harm_tag>_FULLSAMPLE.dta`
 
 Worker panel:
 - `PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_PANEL_QUARTER.dta`
 
 Latest aliases:
-- `PANEL/DATA/MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta`
+- `PANEL/DATA/MEX_ENOE_<harm_tag>_FULLSAMPLE_latest.dta`
 - `PANEL/DATA/MEX_PANEL_QUARTER_latest.dta`
+
+Version suffixes are manifest-driven:
+- source of truth: `Do-files/00_ENOE_Versioning.do`
+- detailed policy: `Doc/VERSIONING.md`
 
 ## Logs and state
 
@@ -93,4 +97,3 @@ Primary state locations:
 Stata logs can be created in:
 - `Do-files/Logs/`
 - repo root temporary `tmp_*.log` files produced by wrapper do-files
-

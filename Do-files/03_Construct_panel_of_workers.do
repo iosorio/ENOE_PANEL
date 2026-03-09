@@ -3,6 +3,11 @@
 cap log close step03
 log using "Do-files/Logs/03_Construct_panel_of_workers.log", replace name(step03)
 clear
+do "$path/Do-files/00_ENOE_Versioning.do"
+
+local country "$enoe_country"
+local survey "$enoe_survey"
+local harm_tag "$enoe_harm_tag"
 /*******************************************************************************
 * 03_Construct_panel_of_workers.do
 *******************************************************************************/
@@ -26,10 +31,10 @@ clear
 	}
 
 	local panel_tag "`panel_start_year'_`panel_end_year'Q`panel_end_quarter'"
-	local fullsample_file "$path/PANEL/DATA/MEX_`panel_tag'_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta"
-	local fullsample_latest "$path/PANEL/DATA/MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta"
-	local panel_file "$path/PANEL/DATA/MEX_`panel_tag'_PANEL_QUARTER.dta"
-	local panel_latest "$path/PANEL/DATA/MEX_PANEL_QUARTER_latest.dta"
+	local fullsample_file "$path/PANEL/DATA/`country'_`panel_tag'_`survey'_`harm_tag'_FULLSAMPLE.dta"
+	local fullsample_latest "$path/PANEL/DATA/`country'_`survey'_`harm_tag'_FULLSAMPLE_latest.dta"
+	local panel_file "$path/PANEL/DATA/`country'_`panel_tag'_PANEL_QUARTER.dta"
+	local panel_latest "$path/PANEL/DATA/`country'_PANEL_QUARTER_latest.dta"
 
 	cap confirm file "`fullsample_file'"
 	if _rc {

@@ -38,6 +38,12 @@ import sys
 import pandas as pd
 from pandas.api.types import is_string_dtype
 
+QUARTERLY_AGENT_DIR = Path(__file__).resolve().parents[1] / "quarterly_agent"
+if str(QUARTERLY_AGENT_DIR) not in sys.path:
+    sys.path.insert(0, str(QUARTERLY_AGENT_DIR))
+
+from versioning import load_version_config
+
 
 def find_file(stata_dir: Path, token: str, suffix: str) -> Path | None:
     if not stata_dir.exists():
@@ -158,11 +164,13 @@ def main() -> int:
     parser.add_argument("--update", action="store_true", help="Update sample size tags in .do files.")
     args = parser.parse_args()
 
-    root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[1]
-    report_path = Path(args.report).resolve() if args.report else root / "sample_size_audit.csv"
+    repo_root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
+    report_path = Path(args.report).resolve() if args.report else repo_root / "Do-files" / "sample_size_audit" / "sample_size_audit.csv"
+    cfg = load_version_config(repo_root)
 
-    files = sorted(root.rglob("MEX_*_ENOE_V01_M_V06_A_GLD_ALL.do"))
-    path_q_re = re.compile(r"MEX_(\d{4})_ENOE-(Q[1-4])")
+    files = sorted(repo_root.rglob(f"{cfg.country}_*_{cfg.survey}_V*_M_V*_A_{cfg.harmonization_acronym}_ALL.do"))
+    path_q_re = re.compile(rf"{cfg.country}_(\d{{4}})_{cfg.survey}-(Q[1-4])")
+    path_master_re = re.compile(rf"{cfg.country}_(\d{{4}})_{cfg.survey}_(V\d{{2}})_M$")
 
     hh_re = re.compile(r"(<_Sample size \(HH\)_>\s*\[)([^\]]+)(\]\s*</_Sample size \(HH\)_>)")
     ind_re = re.compile(r"(<_Sample size \(IND\)_>\s*\[)([^\]]+)(\]\s*</_Sample size \(IND\)_>)")
@@ -180,7 +188,16 @@ def main() -> int:
         qnum = int(quarter[1])
         suffix = f"{qnum}{str(year)[2:]}"
 
-        stata_dir = do_file.parents[2] / f"MEX_{year}_ENOE_V01_M" / "Data" / "Stata"
+        master_candidates = []
+        for child in do_file.parents[2].iterdir():
+            if child.is_dir() and path_master_re.match(child.name):
+                master_candidates.append(child)
+        master_dir = sorted(master_candidates)[-1] if master_candidates else None
+        if master_dir is None:
+            missing += 1
+            continue
+
+        stata_dir = master_dir / "Data" / "Stata"
         sdemt = find_file(stata_dir, "sdemt", suffix)
         if sdemt is None:
             missing += 1

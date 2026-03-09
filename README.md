@@ -80,14 +80,49 @@ do "Do-files/Quality_Checks/00_Run_All_Sequential.do"
 Main outputs:
 
 1. Quarter harmonized file:
-`MEX_YYYY_ENOE-QX/.../Data/Harmonized/MEX_YYYY_ENOE_V01_M_V06_A_GLD_ALL.dta`
+`MEX_YYYY_ENOE-QX/.../Data/Harmonized/MEX_YYYY_ENOE_<harm_tag>_ALL.dta`
 2. Full sample (dynamic horizon):
-`PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_ENOE_V01_M_V06_A_GLD_FULLSAMPLE.dta`
+`PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_ENOE_<harm_tag>_FULLSAMPLE.dta`
 3. Worker panel (dynamic horizon):
 `PANEL/DATA/MEX_<start>_<endYear>Q<endQ>_PANEL_QUARTER.dta`
 4. Stable aliases for latest run:
-`PANEL/DATA/MEX_ENOE_V01_M_V06_A_GLD_FULLSAMPLE_latest.dta`
+`PANEL/DATA/MEX_ENOE_<harm_tag>_FULLSAMPLE_latest.dta`
 `PANEL/DATA/MEX_PANEL_QUARTER_latest.dta`
+
+`<harm_tag>` is manifest-driven. The current manifest is `V01_M_V06_A_GLD`, but the pipeline no longer hardcodes that suffix.
+
+## Versioning
+
+The repository now follows an explicit GLD-style versioning policy:
+
+- `V01_M`: raw/master microdata version
+- `V06_A`: harmonization template/version
+- `GLD`: harmonization acronym
+
+Source of truth:
+
+- `Do-files/00_ENOE_Versioning.do`
+
+Rules:
+
+1. Bump the raw version only when INEGI republishes or changes the raw microdata package.
+2. Bump the harmonization version only when the harmonization logic changes enough to define a new reproducible release lineage.
+3. Keep the upstream GLD comparison baseline explicit, even if local harmonization moves ahead.
+
+Detailed guidance:
+
+- `Doc/VERSIONING.md`
+
+Upstream GLD comparison:
+
+```bash
+python3 Do-files/quarterly_agent/compare_gld_harmonization.py \
+  --year 2025 \
+  --quarter 3 \
+  --fetch-upstream
+```
+
+This writes a diff artifact under `Do-files/quarterly_agent/state/upstream_diff/` so local changes can be reviewed and shared with GLD maintainers.
 
 ## Optional: Parallel Rebuild (Historical Range)
 

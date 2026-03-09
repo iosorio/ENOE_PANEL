@@ -26,6 +26,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
 
+from versioning import harm_program_path, load_version_config, quarter_root, resolve_existing_harm_dir
+
 USER_AGENT = "ENOE-Quarterly-Agent/1.0 (+phase1b)"
 INEGI_LP_PAGE = "https://www.inegi.org.mx/desarrollosocial/lp/"
 INEGI_LP_JS = "https://www.inegi.org.mx/desarrollosocial/lp/js/contenido.min.js"
@@ -458,13 +460,15 @@ def read_monthly_csv(path: Path) -> list[MonthlyPoint]:
 
 
 def patch_target_harmonization_do(repo_root: Path, year: int, quarter: int, dry_run: bool) -> dict[str, Any]:
-    qroot = repo_root / f"MEX_{year}_ENOE-Q{quarter}"
-    do_path = (
-        qroot
-        / f"MEX_{year}_ENOE_V01_M_V06_A_GLD"
-        / "Programs"
-        / f"MEX_{year}_ENOE_V01_M_V06_A_GLD_ALL.do"
-    )
+    cfg = load_version_config(repo_root)
+    qroot = quarter_root(repo_root, cfg, year, quarter)
+    do_path = harm_program_path(qroot, cfg, year)
+    if not do_path.exists():
+        existing_harm_dir = resolve_existing_harm_dir(qroot, cfg, year)
+        if existing_harm_dir is not None:
+            candidates = sorted(existing_harm_dir.joinpath("Programs").glob(f"{cfg.country}_{year}_{cfg.survey}_*_ALL.do"))
+            if candidates:
+                do_path = candidates[-1]
 
     if not do_path.exists():
         return {"status": "missing_do", "path": str(do_path)}

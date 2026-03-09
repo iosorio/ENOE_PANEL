@@ -13,6 +13,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from versioning import ENOEVersionConfig, load_version_config, panel_output_path, quarter_root, resolve_existing_master_dir
+
 
 def utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
@@ -130,8 +132,12 @@ def choose_original_zip(original_dir: Path, year: int, quarter: int) -> Path | N
 
 
 def zip_available_for_quarter(repo_root: Path, year: int, quarter: int) -> tuple[bool, str]:
-    qroot = repo_root / f"MEX_{year}_ENOE-Q{quarter}"
-    original_dir = qroot / f"MEX_{year}_ENOE_V01_M" / "Data" / "Original"
+    cfg = load_version_config(repo_root)
+    qroot = quarter_root(repo_root, cfg, year, quarter)
+    master = resolve_existing_master_dir(qroot, cfg, year)
+    if master is None:
+        return False, f"Master dir missing: {qroot}"
+    original_dir = master / "Data" / "Original"
     if not original_dir.exists():
         return False, f"Original dir missing: {original_dir}"
 
@@ -159,14 +165,14 @@ def panel_tag(start_year: int, end_year: int, end_quarter: int) -> str:
     return f"{start_year}_{end_year}Q{end_quarter}"
 
 
-def expected_panel_output(repo_root: Path, start_year: int, end_year: int, end_quarter: int) -> Path:
-    tag = panel_tag(start_year, end_year, end_quarter)
-    return repo_root / "PANEL" / "DATA" / f"MEX_{tag}_PANEL_QUARTER.dta"
+def expected_panel_output(repo_root: Path, cfg: ENOEVersionConfig, start_year: int, end_year: int, end_quarter: int) -> Path:
+    return panel_output_path(repo_root, cfg, start_year, end_year, end_quarter)
 
 
 def main() -> int:
     args = parse_args()
     repo_root = Path(args.repo_root).resolve()
+    cfg = load_version_config(repo_root)
     script_dir = Path(__file__).resolve().parent
 
     phase1 = script_dir / "phase1_detect_download.py"
@@ -262,7 +268,7 @@ def main() -> int:
         "label": f"{target_year}-Q{target_quarter}",
     }
 
-    target_root = repo_root / f"MEX_{target_year}_ENOE-Q{target_quarter}"
+    target_root = quarter_root(repo_root, cfg, target_year, target_quarter)
     target_exists_before = target_root.exists()
 
     # Step 2: scaffold when needed.
@@ -464,7 +470,7 @@ def main() -> int:
         }
 
     # Step 6: phase2 pipeline execution decision.
-    expected_panel = expected_panel_output(repo_root, args.panel_start_year, target_year, target_quarter)
+    expected_panel = expected_panel_output(repo_root, cfg, args.panel_start_year, target_year, target_quarter)
     should_run_pipeline = (
         args.always_run_pipeline
         or args.dry_run

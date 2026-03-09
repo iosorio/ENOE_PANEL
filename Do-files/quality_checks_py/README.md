@@ -24,11 +24,13 @@ Run one harmonized file:
 
 ```bash
 python Do-files/quality_checks_py/qcheck_harmonization.py \
-  --dataset MEX_2025_ENOE-Q3/MEX_2025_ENOE_V01_M_V06_A_GLD/Data/Harmonized/MEX_2025_ENOE_V01_M_V06_A_GLD_ALL.dta \
+  --dataset MEX_2025_ENOE-Q3/MEX_2025_ENOE_<harm_tag>/Data/Harmonized/MEX_2025_ENOE_<harm_tag>_ALL.dta \
   --reports static,basic,categoric \
   --profile full \
   --xlsx
 ```
+
+`<harm_tag>` comes from `Do-files/00_ENOE_Versioning.do`. The current manifest value is `V01_M_V06_A_GLD`.
 
 Run all available quarters (2005-2025):
 

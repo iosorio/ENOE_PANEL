@@ -14,6 +14,8 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from versioning import load_version_config, quarter_root, resolve_existing_master_dir
+
 TABLE_TOKENS = ("COE1T", "COE2T", "SDEMT", "HOGT", "VIVT")
 TABLE_RE = re.compile(r"(?i)^(?:enoe_|enoen_)?(coe1t|coe2t|sdemt|hogt|vivt)(\d{3})\.dta$")
 
@@ -67,10 +69,6 @@ def prev_quarter(year: int, quarter: int) -> tuple[int, int]:
     return year - 1, 4
 
 
-def quarter_root(repo_root: Path, year: int, quarter: int) -> Path:
-    return repo_root / f"MEX_{year}_ENOE-Q{quarter}"
-
-
 def choose_original_zip(original_dir: Path, year: int, quarter: int) -> Path | None:
     candidates = [
         original_dir / f"original_MEX_{year}_ENOE-Q{quarter}.zip",
@@ -90,8 +88,12 @@ def choose_original_zip(original_dir: Path, year: int, quarter: int) -> Path | N
 
 
 def zip_for_quarter(repo_root: Path, year: int, quarter: int) -> Path:
-    root = quarter_root(repo_root, year, quarter)
-    original_dir = root / f"MEX_{year}_ENOE_V01_M" / "Data" / "Original"
+    cfg = load_version_config(repo_root)
+    root = quarter_root(repo_root, cfg, year, quarter)
+    master = resolve_existing_master_dir(root, cfg, year)
+    if master is None:
+        raise FileNotFoundError(f"Master dir not found for {year}-Q{quarter}: {root}")
+    original_dir = master / "Data" / "Original"
     if not original_dir.exists():
         raise FileNotFoundError(f"Original dir not found for {year}-Q{quarter}: {original_dir}")
     zip_path = choose_original_zip(original_dir, year, quarter)

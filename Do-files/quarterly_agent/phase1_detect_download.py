@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from versioning import load_version_config, master_dir, quarter_root
+
 BASE_URL = "https://www.inegi.org.mx"
 API_BASE = f"{BASE_URL}/app/api/descarga/descarga/descargamasiva/lista"
 USER_AGENT = "ENOE-Quarterly-Agent/1.0 (+phase1)"
@@ -230,13 +232,9 @@ def legacy_zip_name(year: int, quarter: int) -> str:
 
 
 def target_original_dir(repo_root: Path, year: int, quarter: int) -> Path:
-    return (
-        repo_root
-        / f"MEX_{year}_ENOE-Q{quarter}"
-        / f"MEX_{year}_ENOE_V01_M"
-        / "Data"
-        / "Original"
-    )
+    cfg = load_version_config(repo_root)
+    qroot = quarter_root(repo_root, cfg, year, quarter)
+    return master_dir(qroot, cfg, year) / "Data" / "Original"
 
 
 def choose_zip_path(dest_dir: Path, year: int, quarter: int) -> Path:
