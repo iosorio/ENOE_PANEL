@@ -1,0 +1,8 @@
+interface:
+  display_name: "ENOE Quarterly Agent"
+  short_description: "Run and diagnose the ENOE quarterly pipeline"
+  default_prompt: "Use $enoe-quarterly-agent to run, rerun, diagnose, or explain the ENOE quarterly pipeline in this repository."
+
+policy:
+  allow_implicit_invocation: false
+

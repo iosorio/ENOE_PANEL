@@ -11,6 +11,18 @@ The repository supports two workflows:
 Coverage in this project is `2005Q1` to `2025Q3`.  
 `2020Q2` is expected missing from source data and is skipped by design.
 
+## Optional: Codex Skill
+
+If you work in Codex and want a repo-aware operator layer for this pipeline:
+
+```bash
+bash codex-skills/install_enoe_skill.sh
+```
+
+Invoke it explicitly as `$enoe-quarterly-agent`.
+
+This skill helps with run orchestration, reruns, QC, diagnosis, and harmonization explanations. It does not add free-form ENOE analytics in this first version.
+
 ## Before Running
 
 Check paths in `Do-files/00_Master.do`:

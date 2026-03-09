@@ -16,6 +16,18 @@ Use only one workflow per run:
 - `Flow A (Python + Stata)`: best for repeatable quarterly operations and logs.
 - `Flow B (Stata-only)`: best when users only have Stata.
 
+## Optional: Codex Skill
+
+If you use Codex in this repo, you can install the operator skill:
+
+```bash
+bash codex-skills/install_enoe_skill.sh
+```
+
+Then invoke it explicitly as `$enoe-quarterly-agent`.
+
+The skill is for running, rerunning, diagnosing, and explaining the existing ENOE pipeline. It does not replace the underlying Stata/Python code.
+
 ## Flow A (Recommended): Python + Stata
 
 Run from repo root:
