@@ -125,6 +125,12 @@ Notes:
 - Add `--fail-on-schema-breaking` to stop when either schema check finds breaking changes.
 - Add `--skip-poverty-sync` only for troubleshooting; production runs should keep it enabled.
 
+QC shortcuts:
+- Quarter-scoped Python QC only:
+  `bash Do-files/quarterly_agent/run_qc_only.sh 2025Q4`
+- Old repo-wide Stata sequential QC path:
+  `bash Do-files/quarterly_agent/run_qc_stata_sequential.sh 2025Q4`
+
 Parallel range example (2021Q1 to 2025Q3):
 
 ```bash

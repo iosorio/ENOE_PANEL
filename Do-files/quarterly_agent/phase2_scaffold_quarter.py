@@ -206,6 +206,36 @@ def clear_stata_quarter_files(stata_dir: Path) -> list[str]:
     return removed
 
 
+def preserve_target_original_zips(dst_root: Path, cfg: ENOEVersionConfig, target: QuarterRef) -> list[tuple[str, bytes]]:
+    preserved: list[tuple[str, bytes]] = []
+    master = resolve_existing_master_dir(dst_root, cfg, target.year)
+    if master is None:
+        return preserved
+    original_dir = master / "Data" / "Original"
+    if not original_dir.exists():
+        return preserved
+    keep = {
+        f"original_MEX_{target.year}_ENOE-Q{target.quarter}.zip",
+        f"original_MEX_{target.year}-Q{target.quarter}.zip",
+    }
+    for path in sorted(original_dir.glob("*.zip")):
+        if path.name in keep:
+            preserved.append((path.name, path.read_bytes()))
+    return preserved
+
+
+def restore_preserved_zips(original_dir: Path, preserved: list[tuple[str, bytes]]) -> list[str]:
+    restored: list[str] = []
+    if not preserved:
+        return restored
+    original_dir.mkdir(parents=True, exist_ok=True)
+    for name, payload in preserved:
+        path = original_dir / name
+        path.write_bytes(payload)
+        restored.append(str(path))
+    return restored
+
+
 def main() -> int:
     args = parse_args()
     repo_root = Path(args.repo_root).resolve()
@@ -231,7 +261,7 @@ def main() -> int:
         source = QuarterRef(args.source_year, args.source_quarter)
     elif args.source_year is None and args.source_quarter is None:
         preferred = prev_quarter(target)
-        source = preferred if quarter_root(repo_root, preferred).exists() else find_fallback_source(repo_root, target)
+        source = preferred if quarter_root(repo_root, cfg, preferred).exists() else find_fallback_source(repo_root, target)
     else:
         print("ERROR: provide both --source-year and --source-quarter, or neither.", file=sys.stderr)
         return 2
@@ -247,6 +277,7 @@ def main() -> int:
         return 2
 
     exists_before = dst_root.exists()
+    preserved_target_zips: list[tuple[str, bytes]] = []
     action = "none"
     if exists_before and not args.force:
         action = "skipped_target_exists"
@@ -254,6 +285,7 @@ def main() -> int:
         action = "would_scaffold"
     else:
         if exists_before and args.force:
+            preserved_target_zips = preserve_target_original_zips(dst_root, cfg, target)
             shutil.rmtree(dst_root)
         shutil.copytree(src_root, dst_root)
         action = "scaffolded"
@@ -298,6 +330,10 @@ def main() -> int:
         original_dir = new_master / "Data" / "Original"
         stata_dir = new_master / "Data" / "Stata"
         harm_data_dir = new_harm / "Data" / "Harmonized"
+
+        changes["files_restored"] = {
+            "original": restore_preserved_zips(original_dir, preserved_target_zips)
+        }
 
         changes["files_removed"]["original"] = keep_only_target_original_zips(original_dir, target)
         changes["files_removed"]["stata"] = clear_stata_quarter_files(stata_dir)

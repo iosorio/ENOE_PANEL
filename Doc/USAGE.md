@@ -70,12 +70,15 @@ What this runs:
 2. Phase 1B poverty-line sync from INEGI
 3. Schema checks (`prev` and `yoy`)
 4. Phase 2 Stata harmonization + append + panel
-5. Optional QC
+5. Optional quarter-scoped QC
 
 Useful flags:
 
 - `--dry-run`
 - `--run-qc`
+- `--qc-only` (run QC only against an existing harmonized quarter)
+- `--qc-engine python-quarterly` (default with `--run-qc`)
+- `--qc-engine stata-sequential` (use only when you explicitly want the old repo-wide Stata QC)
 - `--fail-on-schema-breaking`
 - `--skip-poverty-sync` (debug only)
 
@@ -95,6 +98,41 @@ Important:
 `01_ENOE_Harmonization.do`, `02_Append_ENOE_Surveys.do`, `03_Construct_panel_of_workers.do`.
 
 Stata logs are written to `Do-files/Logs/`.
+
+If you run Flow A with `--run-qc`, the default QC now is the quarter-scoped Python qcheck written under:
+
+- `Output/Quality_Checks_Py/by-year/YYYY/QX/`
+
+To force the old repo-wide Stata sequential QC from Flow A:
+
+```bash
+python3 Do-files/quarterly_agent/run_quarterly_agent.py \
+  --target-year 2025 \
+  --target-quarter 4 \
+  --run-qc \
+  --qc-engine stata-sequential
+```
+
+To rerun only QC for an already harmonized quarter, without rerunning harmonization, append, or panel:
+
+```bash
+python3 Do-files/quarterly_agent/run_quarterly_agent.py \
+  --target-year 2025 \
+  --target-quarter 4 \
+  --qc-only
+```
+
+Shortcut wrapper:
+
+```bash
+bash Do-files/quarterly_agent/run_qc_only.sh 2025Q4
+```
+
+Shortcut wrapper for the old repo-wide Stata sequential QC path:
+
+```bash
+bash Do-files/quarterly_agent/run_qc_stata_sequential.sh 2025Q4
+```
 
 ## Parallel Options
 

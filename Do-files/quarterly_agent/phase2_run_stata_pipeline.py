@@ -45,7 +45,7 @@ def utc_now_iso() -> str:
 
 
 def timestamp_slug() -> str:
-    return dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,6 +61,20 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--skip-append", action="store_true")
     ap.add_argument("--skip-panel", action="store_true")
     ap.add_argument("--run-qc", action="store_true")
+    ap.add_argument(
+        "--qc-only",
+        action="store_true",
+        help="Run only the selected QC engine against the existing harmonized quarter",
+    )
+    ap.add_argument(
+        "--qc-engine",
+        choices=["python-quarterly", "stata-sequential"],
+        default="python-quarterly",
+        help="QC engine when --run-qc is enabled",
+    )
+    ap.add_argument("--qc-python-reports", default="static,basic,categoric")
+    ap.add_argument("--qc-python-profile", choices=["core", "full"], default="full")
+    ap.add_argument("--qc-python-xlsx", action="store_true", default=True, help="Write XLSX for python-quarterly QC")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--timeout-seconds", type=int, default=4 * 60 * 60)
     ap.add_argument("--verbose", action="store_true")
@@ -213,6 +227,44 @@ def run_stata_do(stata_bin: str, do_path: Path, timeout_seconds: int, cwd: Path 
     return result
 
 
+def run_cmd_capture(cmd: list[str], cwd: Path, timeout_seconds: int) -> dict[str, Any]:
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            env=os.environ.copy(),
+        )
+    except FileNotFoundError:
+        return {
+            "cmd": cmd,
+            "cwd": str(cwd),
+            "returncode": 127,
+            "stdout_tail": "",
+            "stderr_tail": "",
+            "error": f"Executable not found: {cmd[0]}",
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "cmd": cmd,
+            "cwd": str(cwd),
+            "returncode": 124,
+            "stdout_tail": "",
+            "stderr_tail": "",
+            "error": f"Command exceeded timeout ({timeout_seconds}s).",
+        }
+
+    return {
+        "cmd": cmd,
+        "cwd": str(cwd),
+        "returncode": proc.returncode,
+        "stdout_tail": proc.stdout[-6000:],
+        "stderr_tail": proc.stderr[-6000:],
+    }
+
+
 def classify_stata_issue(run_result: dict[str, Any]) -> dict[str, str] | None:
     text = (
         f"{run_result.get('stdout_tail', '')}\n"
@@ -259,6 +311,19 @@ def write_wrapper_do(path: Path, repo_root: Path, inner_do_rel: str, extra_globa
     path.write_text(content, encoding="utf-8")
 
 
+def qc_python_output_dir(repo_root: Path, year: int, quarter: int) -> Path:
+    return repo_root / "Output" / "Quality_Checks_Py" / "by-year" / str(year) / f"Q{quarter}"
+
+
+def qc_python_artifacts(out_dir: Path, survey_id: str) -> dict[str, Path]:
+    return {
+        "static_csv": out_dir / f"{survey_id}_qcheck_static_py.csv",
+        "basic_csv": out_dir / f"{survey_id}_qcheck_basic_py.csv",
+        "categoric_csv": out_dir / f"{survey_id}_qcheck_categoric_py.csv",
+        "xlsx": out_dir / f"{survey_id}_qcheck_py.xlsx",
+    }
+
+
 def write_preflight_do(path: Path) -> None:
     content = (
         "clear\n"
@@ -301,6 +366,8 @@ def main() -> int:
     if args.panel_start_year > args.year:
         print("ERROR: --panel-start-year must be <= --year", file=sys.stderr)
         return 2
+    if args.qc_only:
+        args.run_qc = True
 
     repo_root = Path(args.repo_root).resolve()
     cfg = load_version_config(repo_root)
@@ -341,6 +408,11 @@ def main() -> int:
             "skip_append": args.skip_append,
             "skip_panel": args.skip_panel,
             "run_qc": args.run_qc,
+            "qc_only": args.qc_only,
+            "qc_engine": args.qc_engine,
+            "qc_python_reports": args.qc_python_reports,
+            "qc_python_profile": args.qc_python_profile,
+            "qc_python_xlsx": args.qc_python_xlsx,
             "stata_bin": args.stata_bin,
             "timeout_seconds": args.timeout_seconds,
         },
@@ -369,23 +441,33 @@ def main() -> int:
         print(summary["error"], file=sys.stderr)
         return 2
 
-    if not hprog.exists():
+    if not args.qc_only and not hprog.exists():
         summary["status"] = "failed"
         summary["error"] = f"Harmonization do-file not found: {hprog}"
         write_json(summary_path, summary)
         print(summary["error"], file=sys.stderr)
         return 2
 
-    zip_path = choose_original_zip(orig_dir, args.year, args.quarter)
+    zip_path = None if args.qc_only else choose_original_zip(orig_dir, args.year, args.quarter)
     summary["paths"]["zip_path"] = str(zip_path) if zip_path else ""
-    if zip_path is None:
+    if not args.qc_only and zip_path is None:
         summary["status"] = "failed"
         summary["error"] = f"No unique ZIP candidate found in {orig_dir} for {args.year}-Q{args.quarter}"
         write_json(summary_path, summary)
         print(summary["error"], file=sys.stderr)
         return 2
 
-    if args.dry_run:
+    if args.qc_only and not hout.exists():
+        summary["status"] = "failed"
+        summary["error"] = f"Harmonized dataset not found for QC-only run: {hout}"
+        write_json(summary_path, summary)
+        print(summary["error"], file=sys.stderr)
+        return 2
+
+    needs_stata_preflight = (not args.qc_only) or args.qc_engine == "stata-sequential"
+    if not needs_stata_preflight:
+        summary["steps"]["stata_preflight"] = {"status": "skipped_qc_only"}
+    elif args.dry_run:
         summary["steps"]["stata_preflight"] = {"status": "would_run"}
     else:
         write_preflight_do(wrapper_preflight)
@@ -397,7 +479,14 @@ def main() -> int:
             fatal_error = True
 
     suffix = quarter_suffix(args.year, args.quarter)
-    if not fatal_error:
+    if args.qc_only:
+        summary["steps"]["extract"] = {"status": "skipped_qc_only"}
+        summary["steps"]["validate_inputs"] = {"status": "skipped_qc_only", "suffix": suffix}
+        summary["steps"]["harmonization"] = {
+            "status": "skipped_qc_only",
+            "harm_output_exists": hout.exists(),
+        }
+    elif not fatal_error:
         if not args.skip_extract:
             if args.dry_run:
                 summary["steps"]["extract"] = {"status": "would_extract", "zip_path": str(zip_path)}
@@ -450,7 +539,9 @@ def main() -> int:
         summary["steps"]["validate_inputs"] = {"status": "blocked", "suffix": suffix}
         summary["steps"]["harmonization"] = {"status": "blocked"}
 
-    if not fatal_error and not args.skip_append:
+    if args.qc_only:
+        summary["steps"]["append"] = {"status": "skipped_qc_only"}
+    elif not fatal_error and not args.skip_append:
         write_wrapper_do(wrapper_append, repo_root, "Do-files/02_Append_ENOE_Surveys.do", extra_globals=do_globals)
         if args.dry_run:
             summary["steps"]["append"] = {"status": "would_run", "wrapper_do": str(wrapper_append)}
@@ -470,7 +561,9 @@ def main() -> int:
     else:
         summary["steps"]["append"] = {"status": "skipped" if args.skip_append else "blocked"}
 
-    if not fatal_error and not args.skip_panel:
+    if args.qc_only:
+        summary["steps"]["panel"] = {"status": "skipped_qc_only"}
+    elif not fatal_error and not args.skip_panel:
         if args.dry_run:
             write_wrapper_do(wrapper_panel, repo_root, "Do-files/03_Construct_panel_of_workers.do", extra_globals=do_globals)
             summary["steps"]["panel"] = {"status": "would_run", "wrapper_do": str(wrapper_panel)}
@@ -492,19 +585,74 @@ def main() -> int:
         summary["steps"]["panel"] = {"status": "skipped" if args.skip_panel else "blocked"}
 
     if not fatal_error and args.run_qc:
-        write_wrapper_do(wrapper_qc, repo_root, "Do-files/Quality_Checks/00_Run_All_Sequential.do")
-        if args.dry_run:
-            summary["steps"]["qc"] = {"status": "would_run", "wrapper_do": str(wrapper_qc)}
-        else:
-            try:
-                result = run_stata_do(args.stata_bin, wrapper_qc, args.timeout_seconds, cwd=repo_root)
-                result["status"] = "ok" if result["returncode"] == 0 and "diagnostic" not in result else "failed"
-                summary["steps"]["qc"] = result
-                if result["status"] != "ok":
+        if args.qc_engine == "python-quarterly":
+            qc_script = repo_root / "Do-files" / "quality_checks_py" / "qcheck_harmonization.py"
+            qc_out_dir = qc_python_output_dir(repo_root, args.year, args.quarter)
+            qc_cmd = [
+                sys.executable,
+                str(qc_script),
+                "--repo-root",
+                str(repo_root),
+                "--dataset",
+                str(hout),
+                "--reports",
+                args.qc_python_reports,
+                "--profile",
+                args.qc_python_profile,
+                "--out-root",
+                str(repo_root / "Output" / "Quality_Checks_Py"),
+                "--single-out-dir",
+                str(qc_out_dir),
+            ]
+            if args.qc_python_xlsx:
+                qc_cmd.append("--xlsx")
+            if args.dry_run:
+                summary["steps"]["qc"] = {
+                    "status": "would_run",
+                    "engine": args.qc_engine,
+                    "cmd": qc_cmd,
+                    "output_dir": str(qc_out_dir),
+                }
+            else:
+                try:
+                    result = run_cmd_capture(qc_cmd, repo_root, args.timeout_seconds)
+                    artifacts = qc_python_artifacts(qc_out_dir, hout.stem)
+                    result["engine"] = args.qc_engine
+                    result["output_dir"] = str(qc_out_dir)
+                    result["artifacts"] = {name: str(path) for name, path in artifacts.items()}
+                    ok = (
+                        result["returncode"] == 0
+                        and artifacts["static_csv"].exists()
+                        and artifacts["basic_csv"].exists()
+                        and artifacts["categoric_csv"].exists()
+                        and (not args.qc_python_xlsx or artifacts["xlsx"].exists())
+                    )
+                    result["status"] = "ok" if ok else "failed"
+                    summary["steps"]["qc"] = result
+                    if not ok:
+                        fatal_error = True
+                except Exception as exc:  # noqa: BLE001
+                    summary["steps"]["qc"] = {"status": "failed", "engine": args.qc_engine, "error": str(exc)}
                     fatal_error = True
-            except Exception as exc:  # noqa: BLE001
-                summary["steps"]["qc"] = {"status": "failed", "error": str(exc)}
-                fatal_error = True
+        else:
+            write_wrapper_do(wrapper_qc, repo_root, "Do-files/Quality_Checks/00_Run_All_Sequential.do")
+            if args.dry_run:
+                summary["steps"]["qc"] = {
+                    "status": "would_run",
+                    "engine": args.qc_engine,
+                    "wrapper_do": str(wrapper_qc),
+                }
+            else:
+                try:
+                    result = run_stata_do(args.stata_bin, wrapper_qc, args.timeout_seconds, cwd=repo_root)
+                    result["engine"] = args.qc_engine
+                    result["status"] = "ok" if result["returncode"] == 0 and "diagnostic" not in result else "failed"
+                    summary["steps"]["qc"] = result
+                    if result["status"] != "ok":
+                        fatal_error = True
+                except Exception as exc:  # noqa: BLE001
+                    summary["steps"]["qc"] = {"status": "failed", "engine": args.qc_engine, "error": str(exc)}
+                    fatal_error = True
     elif not args.run_qc:
         summary["steps"]["qc"] = {"status": "skipped"}
 

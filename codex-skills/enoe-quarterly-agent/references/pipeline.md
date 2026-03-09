@@ -38,11 +38,17 @@ Important flags:
 - `--stata-bin`
 - `--dry-run`
 - `--run-qc`
+- `--qc-only` (reuse the existing harmonized quarter and run only QC)
+- `--qc-engine` (`python-quarterly` by default; `stata-sequential` only when explicitly needed)
 - `--skip-download`
 - `--skip-scaffold`
 - `--skip-poverty-sync`
 - `--skip-schema`
 - `--always-run-pipeline`
+
+Shortcut wrapper for quarter-only QC:
+- `Do-files/quarterly_agent/run_qc_only.sh`
+- `Do-files/quarterly_agent/run_qc_stata_sequential.sh`
 
 ### Parallel rebuild
 

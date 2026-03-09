@@ -34,6 +34,12 @@
 <_ISIC Version_>				[Rev.4] </_ISIC Version_>
 <_INDUS National_>				[SCIAN Hogares 2018] </_INDUS National_>
 
+* Note (2026-02-26): ENOE RNM metadata indicates SCIAN Hogares 2018 is used from 2023-Q1 onward.
+* Source: https://www.inegi.org.mx/rnm/index.php/catalog/873/
+* ISIC crosswalk selection in this do-file:
+*   - Prefer SCIAN_18_3D_ISIC_4.dta (3-digit) when available
+*   - Fallback to SCIAN_07_3D_ISIC_4.dta (3-digit) for backward compatibility
+
 -----------------------------------------------------------------------
 <_Version Control_>
 
@@ -44,6 +50,8 @@
 * Date: [2023-02-08] - [Correct empstat]
 * Date: [2023-03-29] - [Correct subnatid1, educy]
 * Date: [2023-11-11] - [Correct quarter, level1, d_mes, includevars, *set mem, includevars]
+* Date: [2026-02-26] - [Document SCIAN Hogares 2018 for ENOE 2025Q3 and update industry_orig labels]
+* Date: [2026-02-27] - [Use SCIAN_18_3D_ISIC_4 when present (fallback to SCIAN_07_3D_ISIC_4)]
 
 
 </_Version Control_>
@@ -93,10 +101,11 @@ local out_file "`level_2_harm'_ALL.dta"
 local q  = substr("`quarter'",2,1);
 local yy = substr("`year'",3,2);
 local x = `q'`yy';
+local year_num = real("`year'");
 noi di "x: `x'";
-local use_enoen_ext = inlist(`x',320,420,121,221);
-local use_enoen     = inlist(`x',321,421,122,222,322,422);
-local use_enoe      = inlist(`x',123,223,323,423,124,224,324,424,125,225,325);
+local use_enoen_ext = (`year_num' == 2020 & inlist(`q',3,4)) | (`year_num' == 2021 & inlist(`q',1,2));
+local use_enoen     = (`year_num' == 2021 & inlist(`q',3,4)) | (`year_num' == 2022);
+local use_enoe      = (`year_num' >= 2023);
 cd "`path_in_stata'";
 
 * COE1;
@@ -592,22 +601,28 @@ erase "`path_output'/baseCOE2T`x'.dta";
 #delimit cr
 
 
-	*ISIC
-	***first job
-		rename scian scian_orig
-		tostring p4a, gen(scian_help)
-		gen scian = substr(scian_help,1,3)
-		merge m:1 scian using "`path_in_stata'/SCIAN_07_3D_ISIC_4.dta", keep(master match) nogen
-	*Note: rename necessary to allow for the second job code to generate a new cmo for the merge
-		rename scian scian_1
-		rename isic isic_1
-		rename scian_help scian_help_1
-	***second job
-		tostring p7c, gen(scian_help)
-		gen scian = substr(scian_help,1,3)
-		merge m:1 scian using "`path_in_stata'/SCIAN_07_3D_ISIC_4.dta", keep(master match) nogen
-	*Note: rename necessary to interpret scian
-		rename scian scian_2
+		*ISIC
+		local scian_xwalk "`path_in_stata'/SCIAN_07_3D_ISIC_4.dta"
+		local scian_digits 3
+		capture confirm file "`path_in_stata'/SCIAN_18_3D_ISIC_4.dta"
+		if _rc == 0 {
+			local scian_xwalk "`path_in_stata'/SCIAN_18_3D_ISIC_4.dta"
+		}
+		***first job
+			rename scian scian_orig
+			tostring p4a, gen(scian_help) format(%04.0f)
+			gen scian = substr(scian_help,1,`scian_digits')
+			merge m:1 scian using "`scian_xwalk'", keep(master match) nogen
+		*Note: rename necessary to allow for the second job code to generate a new cmo for the merge
+			rename scian scian_1
+			rename isic isic_1
+			rename scian_help scian_help_1
+		***second job
+			tostring p7c, gen(scian_help) format(%04.0f)
+			gen scian = substr(scian_help,1,`scian_digits')
+			merge m:1 scian using "`scian_xwalk'", keep(master match) nogen
+		*Note: rename necessary to interpret scian
+			rename scian scian_2
 		rename isic isic_2
 		rename scian_help scian_help_2
 
@@ -2463,7 +2478,6 @@ replace industrycat10_2_helper=. if lstatus!=1
 
 	}
 
-
 *</_% Correction min age_>
 }
 
@@ -2569,4 +2583,3 @@ compress
 save "`path_output'/`out_file'", replace
 
 *</_% SAVE_>
-

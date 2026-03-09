@@ -78,6 +78,9 @@ This index lists consolidated ENOE documentation (questionnaires, crosswalks, an
 **2024-Q4**
 - `by-year-quarter/2024-Q4/nota_bases_datos_enoe_2024_4t.txt` - INEGI release notes for ENOE data (quarter-specific).
 
+**2025-Q4**
+- `by-year-quarter/2025-Q4/readme_2025_q4_release.md` - Repo release note for ENOE 2025-Q4, including official source, schema result, workflow fixes, rebuilt outputs, and quarter-scoped QC artifacts.
+
 ## By year
 **2005**
 - `by-year/2005/readme_2005.txt` - Year-specific survey documentation and sourcing notes.

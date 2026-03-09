@@ -90,10 +90,10 @@ def load_version_config(repo_root: Path) -> ENOEVersionConfig:
         "enoe_harmonization_acronym",
         "enoe_raw_tag",
         "enoe_harm_tag",
-        "enoe_upstream_compare_raw_version",
-        "enoe_upstream_compare_harm_version",
-        "enoe_upstream_compare_harm_tag",
-        "enoe_upstream_repo",
+        "enoe_upcmp_raw_version",
+        "enoe_upcmp_harm_version",
+        "enoe_upcmp_harm_tag",
+        "enoe_upcmp_repo",
     )
     missing = [key for key in required if key not in values or values[key] == ""]
     if missing:
@@ -107,10 +107,10 @@ def load_version_config(repo_root: Path) -> ENOEVersionConfig:
         harmonization_acronym=values["enoe_harmonization_acronym"],
         raw_tag=values["enoe_raw_tag"],
         harm_tag=values["enoe_harm_tag"],
-        upstream_compare_raw_version=values["enoe_upstream_compare_raw_version"],
-        upstream_compare_harm_version=values["enoe_upstream_compare_harm_version"],
-        upstream_compare_harm_tag=values["enoe_upstream_compare_harm_tag"],
-        upstream_repo=values["enoe_upstream_repo"],
+        upstream_compare_raw_version=values["enoe_upcmp_raw_version"],
+        upstream_compare_harm_version=values["enoe_upcmp_harm_version"],
+        upstream_compare_harm_tag=values["enoe_upcmp_harm_tag"],
+        upstream_repo=values["enoe_upcmp_repo"],
     )
 
 

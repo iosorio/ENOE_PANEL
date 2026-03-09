@@ -21,7 +21,7 @@ def utc_now_iso() -> str:
 
 
 def timestamp_slug() -> str:
-    return dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,6 +41,17 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--stata-bin", default="stata-mp")
     ap.add_argument("--timeout-seconds", type=int, default=4 * 60 * 60)
     ap.add_argument("--run-qc", action="store_true")
+    ap.add_argument(
+        "--qc-only",
+        action="store_true",
+        help="Run only QC for an existing harmonized quarter; skips detect/download/scaffold/schema",
+    )
+    ap.add_argument(
+        "--qc-engine",
+        choices=["python-quarterly", "stata-sequential"],
+        default="python-quarterly",
+        help="QC engine passed to the phase2 runner when --run-qc is enabled",
+    )
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--overwrite-download", action="store_true")
     ap.add_argument("--force-scaffold", action="store_true")
@@ -171,6 +182,17 @@ def expected_panel_output(repo_root: Path, cfg: ENOEVersionConfig, start_year: i
 
 def main() -> int:
     args = parse_args()
+    if args.qc_only:
+        args.run_qc = True
+        args.skip_detect = True
+        args.skip_download = True
+        args.skip_scaffold = True
+        args.skip_poverty_sync = True
+        args.skip_schema = True
+        args.always_run_pipeline = True
+        if args.target_year is None or args.target_quarter is None:
+            print("ERROR: --qc-only requires both --target-year and --target-quarter", file=sys.stderr)
+            return 2
     repo_root = Path(args.repo_root).resolve()
     cfg = load_version_config(repo_root)
     script_dir = Path(__file__).resolve().parent
@@ -199,6 +221,7 @@ def main() -> int:
             "panel_start_year": args.panel_start_year,
             "stata_bin": args.stata_bin,
             "timeout_seconds": args.timeout_seconds,
+            "qc_only": args.qc_only,
             "dry_run": args.dry_run,
             "overwrite_download": args.overwrite_download,
             "force_scaffold": args.force_scaffold,
@@ -211,6 +234,7 @@ def main() -> int:
             "always_run_pipeline": args.always_run_pipeline,
             "fail_on_schema_breaking": args.fail_on_schema_breaking,
             "run_qc": args.run_qc,
+            "qc_engine": args.qc_engine,
         },
         "steps": {},
         "status": "running",
@@ -503,6 +527,9 @@ def main() -> int:
         ]
         if args.run_qc:
             cmd.append("--run-qc")
+            cmd.extend(["--qc-engine", args.qc_engine])
+        if args.qc_only:
+            cmd.append("--qc-only")
         if args.dry_run:
             cmd.append("--dry-run")
         if args.verbose:

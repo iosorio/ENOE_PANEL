@@ -106,6 +106,11 @@ def parse_args() -> argparse.Namespace:
         default=str(default_repo_root / "Output" / "Quality_Checks_Py"),
         help="Output root for report files",
     )
+    ap.add_argument(
+        "--single-out-dir",
+        default=None,
+        help="Optional explicit output directory for a single --dataset run",
+    )
     ap.add_argument("--xlsx", action="store_true", help="Also write an Excel workbook per dataset")
     ap.add_argument("--strict", action="store_true", help="Exit non-zero if any dataset run fails")
     return ap.parse_args()
@@ -1691,6 +1696,7 @@ def main() -> int:
 
     repo_root = Path(args.repo_root).resolve()
     out_root = Path(args.out_root).resolve()
+    single_out_dir = Path(args.single_out_dir).resolve() if args.single_out_dir else None
     varlists_do = Path(args.varlists_do).resolve()
     isic_codes = Path(args.isic_codes).resolve()
     isco_codes = Path(args.isco_codes).resolve()
@@ -1745,7 +1751,7 @@ def main() -> int:
                 out_dir = out_root / "by-year" / str(year) / f"Q{quarter}"
                 label = f"{year}-Q{quarter}"
             else:
-                out_dir = out_root / "single"
+                out_dir = single_out_dir if single_out_dir is not None else out_root / "single"
                 label = dataset_path.stem
 
             print(f"[RUN] {label}: {dataset_path}")

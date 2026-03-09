@@ -48,12 +48,15 @@ This flow can do, in order:
 2. Sync poverty-line values from INEGI sources
 3. Run schema checks (`prev` and `yoy`)
 4. Run Stata harmonization, append, and panel construction
-5. Optionally run QC
+5. Optionally run quarter-scoped QC
 
 Common flags:
 
 - `--dry-run`
 - `--run-qc`
+- `--qc-only` (run QC only against an existing harmonized quarter)
+- `--qc-engine python-quarterly` (default with `--run-qc`)
+- `--qc-engine stata-sequential` (old repo-wide Stata QC)
 - `--fail-on-schema-breaking`
 - `--skip-poverty-sync` (debug use only)
 
@@ -73,6 +76,37 @@ To run Stata QC:
 
 ```stata
 do "Do-files/Quality_Checks/00_Run_All_Sequential.do"
+```
+
+To force the Python+Stata quarterly runner to use that old repo-wide QC path:
+
+```bash
+python3 Do-files/quarterly_agent/run_quarterly_agent.py \
+  --target-year 2025 \
+  --target-quarter 4 \
+  --run-qc \
+  --qc-engine stata-sequential
+```
+
+To rerun only quarter-scoped QC without rerunning harmonization, append, or panel:
+
+```bash
+python3 Do-files/quarterly_agent/run_quarterly_agent.py \
+  --target-year 2025 \
+  --target-quarter 4 \
+  --qc-only
+```
+
+Shortcut wrapper:
+
+```bash
+bash Do-files/quarterly_agent/run_qc_only.sh 2025Q4
+```
+
+Shortcut wrapper for the old repo-wide Stata sequential QC path:
+
+```bash
+bash Do-files/quarterly_agent/run_qc_stata_sequential.sh 2025Q4
 ```
 
 ## What You Get
