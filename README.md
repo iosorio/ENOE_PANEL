@@ -6,7 +6,7 @@ This project helps you keep ENOE updated each quarter and produce:
 - A full stacked ENOE database
 - A worker panel dataset
 
-Coverage currently runs from `2005Q1` to `2025Q3`.  
+Coverage currently runs from `2005Q1` to `2025Q4`.  
 `2020Q2` is expected missing because ENOE source microdata is not available for that quarter.
 
 ## Pick One Workflow
